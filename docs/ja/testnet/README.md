@@ -1,19 +1,19 @@
-### Conceptual Goals:
-* Have an easily understood network layout based on docker or other infrastructure tooling
-* Have a one click deploy of a full network
-* Allow definition of deployment of a network in certain states or based on defined preconditions
+# 概念的な目標:
+* Dockerまたはその他のインフラストラクチャツールに基づいたネットワークレイアウトを簡単に理解できる
+*フルネットワークをワンクリックで展開する
+*特定の状態で、または定義された前提条件に基づいて、ネットワークの展開を定義できるようにする
 
-### Deliverable Goals:
-* Docker images for each component that are self-contained and defined to run as production assets
-* Test suite definition tool that uses said image in combination with arguments/files for the scenario
+### 成果物の目標:
+*自己完結型であり、本番アセットとして実行するように定義されている各コンポーネントのDockerイメージ
+*シナリオの引数/ファイルと組み合わせて上記の画像を使用するテストスイート定義ツール
 
-#### Current state:
-* Orchestrator
-  * Defined docker image with rust binaries.
-  * No files required, all settings brought in via image environment variables
-* Gravity module
-  * Docker build requires keys signed and rotated before build
-  * Environment variables/arguments are unused, all configuration comes from files
-* Ethereum
-  * Most likely to be changed or need specific starting states, least important to be deployable image because it isn't our product
-  * Can be implement with geth+genesis file, or a hardhat image
+#### 現在の状態:
+*オーケストレーター
+  *錆びたバイナリで定義されたDockerイメージ。
+  *ファイルは必要ありません。すべての設定は画像環境変数を介して取り込まれます
+*重力モジュール
+  * Dockerビルドでは、ビルド前に署名およびローテーションされたキーが必要です
+  *環境変数/引数は使用されていません。すべての構成はファイルから取得されます
+*イーサリアム
+  *変更される可能性が高いか、特定の開始状態が必要です。これは当社の製品ではないため、デプロイ可能なイメージであることが最も重要ではありません。
+  * geth + genesisファイルまたはハードハットイメージで実装できます

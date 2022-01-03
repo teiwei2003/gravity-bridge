@@ -1,18 +1,18 @@
-# State
+# 状態
 
-## Params
+## パラメータ
 
-Params is a module-wide configuration structure that stores system parameters
-and defines overall functioning of the staking module.
+Paramsは、システムパラメータを格納するモジュール全体の構成構造です。
+ステーキングモジュールの全体的な機能を定義します。
 
-- Params: `Paramsspace("gravity") -> legacy_amino(params)`
+-パラメータ: `Paramsspace(" gravity ")-> legend_amino(params)`
 
 +++ <https://github.com/althea-net/cosmos-gravity-bridge/blob/main/module/proto/gravity/v1/genesis.proto#L72-L104>
 
 
 ### BatchTx
 
-Stored in two possible ways, first with a height and second without (unsafe). Unsafe is used for testing and export and import of state.
+2つの可能な方法で保存されます。1つは高さあり、2つ目は高さなし(安全ではない)です。 Unsafeは、状態のテストとエクスポートおよびインポートに使用されます。
 
 | key          | Value | Type   | Encoding               |
 |--------------|-------|--------|------------------------|
@@ -20,9 +20,9 @@ Stored in two possible ways, first with a height and second without (unsafe). Un
 
 ### ValidatorSet
 
-This is the validator set of the bridge.
+これは、ブリッジのバリデーターセットです。
 
-Stored in two possible ways, first with a height and second without (unsafe). Unsafe is used for testing and export and import of state.
+2つの可能な方法で保存されます。1つは高さあり、2つ目は高さなし(安全ではない)です。 Unsafeは、状態のテストとエクスポートおよびインポートに使用されます。
 
 | key          | Value | Type   | Encoding               |
 |--------------|-------|--------|------------------------|
@@ -30,7 +30,7 @@ Stored in two possible ways, first with a height and second without (unsafe). Un
 
 ### ValsetNonce
 
-The latest validator set nonce, this value is updated on every write. 
+最新のバリデーターセットナンス。この値は書き込みごとに更新されます。
 
 | key          | Value | Type   | Encoding               |
 |--------------|-------|--------|------------------------|
@@ -38,7 +38,7 @@ The latest validator set nonce, this value is updated on every write.
 
 ### SlashedValeSetNonce
 
-The latest validator set slash nonce. This is used to track which validator set needs to be slashed and which already has been. 
+最新のバリデーターはスラッシュナンスを設定しました。 これは、どのバリデーターセットをスラッシュする必要があり、どれがすでにスラッシュされているかを追跡するために使用されます。
 
 | Key            | Value | Type   | Encoding               |
 |----------------|-------|--------|------------------------|
@@ -46,7 +46,7 @@ The latest validator set slash nonce. This is used to track which validator set 
 
 ### Validator Set Confirmation
 
-When a validator signs over a validator set this is considered a `valSetConfirmation`, these are saved via the current nonce and the orchestrator address. 
+バリデーターがバリデーターセットに署名すると、これは「valSetConfirmation」と見なされ、現在のナンスとオーケストレーターアドレスを介して保存されます。
 
 
 | Key                                         | Value                  | Type                     | Encoding         |
@@ -55,7 +55,7 @@ When a validator signs over a validator set this is considered a `valSetConfirma
 
 ### ConfirmBatch
 
-When a validator confirms a batch it is added to the confirm batch store. It is stored using the orchestrator, token contract and nonce as the key. 
+バリデーターがバッチを確認すると、確認バッチストアに追加されます。 オーケストレーター、トークンコントラクト、ナンスをキーとして保存されます。
 
 | Key                                                                 | Value                        | Type                    | Encoding         |
 |---------------------------------------------------------------------|------------------------------|-------------------------|------------------|
@@ -63,7 +63,7 @@ When a validator confirms a batch it is added to the confirm batch store. It is 
 
 ### OrchestratorValidator
 
-When a validator would like to delegate their voting power to another key. The value is stored using the orchestrator address as the key
+バリデーターが投票権を別のキーに委任したい場合。 値は、オーケストレーターアドレスをキーとして使用して保存されます
 
 | Key                                 | Value                                        | Type     | Encoding         |
 |-------------------------------------|----------------------------------------------|----------|------------------|
@@ -71,7 +71,7 @@ When a validator would like to delegate their voting power to another key. The v
 
 ### EthAddress
 
-A validator has an associated counter chain address. 
+バリデーターには、カウンターチェーンアドレスが関連付けられています。
 
 | Key                                 | Value                                        | Type     | Encoding         |
 |-------------------------------------|----------------------------------------------|----------|------------------|
@@ -80,7 +80,7 @@ A validator has an associated counter chain address.
 
 ### ContractCallTx
 
-When a user requests a logic call to be executed on an opposing chain it is stored in a store within the gravity module.
+ユーザーが論理呼び出しを反対側のチェーンで実行するように要求すると、それは重力モジュール内のストアに格納されます。
 
 | Key                                 | Value                                        | Type     | Encoding         |
 |-------------------------------------|----------------------------------------------|----------|------------------|
@@ -88,7 +88,7 @@ When a user requests a logic call to be executed on an opposing chain it is stor
 
 ### ConfirmLogicCall
 
-When a logic call is executed validators confirm the execution. 
+ロジックコールが実行されると、バリデーターが実行を確認します。
 
 | Key                                 | Value                                        | Type     | Encoding         |
 |-------------------------------------|----------------------------------------------|----------|------------------|
@@ -96,7 +96,7 @@ When a logic call is executed validators confirm the execution.
 
 ### OutgoingTx
 
-Sets an outgoing transactions into the applications transaction pool to be included into a batch. 
+バッチに含まれるアプリケーショントランザクションプールに送信トランザクションを設定します。
 
 | Key                                 | Value                                        | Type     | Encoding         |
 |-------------------------------------|----------------------------------------------|----------|------------------|
@@ -106,7 +106,7 @@ Sets an outgoing transactions into the applications transaction pool to be inclu
 
 ### SlashedBlockHeight
 
-Represents the latest slashed block height. There is always only a singe value stored. 
+最新のスラッシュブロックの高さを表します。 保存される値は常に1つだけです。
 
 | Key                                 | Value                                        | Type     | Encoding         |
 |-------------------------------------|----------------------------------------------|----------|------------------|
@@ -114,7 +114,7 @@ Represents the latest slashed block height. There is always only a singe value s
 
 ### TokenContract & Denom
 
-A denom that is originally from a counter chain will be from a contract. The toke contract and denom are stored in two ways. First, the denom is used as the key and the value is the token contract. Second, the contract is used as the key, the value is the denom the token contract represents. 
+もともとカウンターチェーンからのものであるデノムは、契約からのものになります。 トークコントラクトとデノムは2つの方法で保存されます。 まず、デノムがキーとして使用され、値はトークンコントラクトです。 次に、コントラクトがキーとして使用されます。値は、トークンコントラクトが表すデノムです。
 
 | Key                                 | Value                                        | Type     | Encoding         |
 |-------------------------------------|----------------------------------------------|----------|------------------|
@@ -126,7 +126,7 @@ A denom that is originally from a counter chain will be from a contract. The tok
 
 ### LastEventNonce
 
-The last observed event nonce. This is set when `TryAttestation()` is called. There is always only a single value held in this store.
+最後に観測されたイベントナンス。 これは、 `TryAttestation()`が呼び出されたときに設定されます。 このストアには常に単一の値しかありません。
 
 | Key                                 | Value                                        | Type     | Encoding         |
 |-------------------------------------|----------------------------------------------|----------|------------------|
@@ -134,7 +134,7 @@ The last observed event nonce. This is set when `TryAttestation()` is called. Th
 
 ### LastObservedEthereumHeight 
 
-This is the last observed height on ethereum. There will always only be a single value stored in this store.
+これは、イーサリアムで最後に観測された高さです。 このストアには常に単一の値のみが保存されます。
 
 | Key                                 | Value                                        | Type     | Encoding         |
 |-------------------------------------|----------------------------------------------|----------|------------------|

@@ -1,60 +1,60 @@
 ## Building
 
-On first run:
-make proto-update-deps
-make proto-tools
-To build:
-make
+最初の実行時:
+proto-update-depsを作成します
+プロトツールを作成する
+構築するには:
+作る
 
-## Early MVP
+## 初期のMVP
 
-Happy path implementations
+ハッピーパスの実装
 
 ### Oracle
 
-#### Assumptions
+#### 前提条件
 
-- An orchestrator may want to submit multiple claims with a msg (withdrawal batch update + MultiSig Set update )
-- Nonces are not unique without a context (withdrawal nonce and MultiSig Set update can have same nonce (=height))
-- A nonce is unique in it's context and never reused
-- Multiple claims by an orchestrator for the same ETH event are forbidden
-- We know the ETH event types beforehand (and handle them as ClaimTypes)
-- For an **observation** status in Attestation the power AND count thresholds must be exceeded
-- Fraction type allows higher precision math than %. For example with 2/3
+-オーケストレーターは、メッセージを使用して複数のクレームを送信したい場合があります(撤回バッチ更新+ MultiSigセット更新)
+-ナンスはコンテキストなしでは一意ではありません(撤回ナンスとMultiSigセットの更新は同じナンス(=高さ)を持つことができます)
+-ナンスはそのコンテキストで一意であり、再利用されることはありません
+-同じETHイベントに対するオーケストレーターによる複数のクレームは禁止されています
+-事前にETHイベントタイプを知っています(そしてそれらをClaimTypesとして扱います)
+-アテステーションの**監視**ステータスの場合、電力とカウントのしきい値を超える必要があります
+-分数タイプでは、％よりも高精度の計算が可能です。たとえば2/3
 
-A good start to follow the process would be the `x/gravity/handler_test.go` file
+プロセスに従うための良いスタートは、 `x/gravity/handler_test.go`ファイルです。
 
-### Outgoing TX Pool
+### 送信TXプール
 
-#### Features
+#### 特徴
 
-- Unique denominator for gravity vouchers in cosmos (🚧 cut to 15 chars and without a separator due to sdk limitations in v0.38.4)
-- Voucher burning 🔥 (minting in test ⛏️ )
-- Store/ resolve bridged ETH denominator and contract
-- Persistent transaction pool
-- Transactions sorted by fees (on a second index)
-- Extended test setup
+-コスモスの重力バウチャーのユニークな分母(🚧v0.38.4のSDKの制限により、15文字にカットされ、セパレーターはありません)
+-バウチャーの燃焼🔥(テストでの造幣⛏️)
+-ブリッジされたETH分母と契約を保存/解決する
+-永続的なトランザクションプール
+-手数料でソートされたトランザクション(2番目のインデックス)
+-拡張テストセットアップ
 
-#### Assumptions
+#### 前提条件
 
-- We have only 1 chainID and 1 ETH contract
+-chainIDとETHの契約は1つだけです
 
-### Bundle Outgoing TX into Batches
+### 送信TXをバッチにバンドル
 
-#### Features
+#### 特徴
 
-- `BatchTx` type with `OutgoingTransferTx` and `TransferCoin`
-- Logic to build batch from pending TXs based on fee desc order
-- Logic to cancel a batch and revert TXs back to pending pool
-- Incremental and unique IDs for batches to be used for `nonces`
-- `VoucherDenom` as first class type
+-`OutgoingTransferTx`と `TransferCoin`を含む` BatchTx`タイプ
+-料金の説明注文に基づいて保留中のTXからバッチを構築するロジック
+-バッチをキャンセルし、TXを保留中のプールに戻すロジック
+-`nonces`に使用されるバッチのインクリメンタルで一意のID
+-ファーストクラスタイプとしての `VoucherDenom`
 
-## Not covered/ implemented
+## カバーされていない/実装されていない
 
-- [ ] unhappy cases
-- [ ] proper unit + integration tests
-- [ ] message validation
-- [ ] Genesis I/O
-- [ ] Parameters
-- [ ] authZ: EthereumChainID whitelisted
-- [ ] authZ: bridge contract address whitelisted
+-[]不幸な事件
+-[]適切なユニット+統合テスト
+-[]メッセージの検証
+-[]ジェネシスI/O
+- [ ] パラメーター
+-[] authZ:EthereumChainIDがホワイトリストに登録されました
+-[] authZ:ブリッジ契約アドレスがホワイトリストに登録されました

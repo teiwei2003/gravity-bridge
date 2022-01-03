@@ -1,6 +1,6 @@
-# Parameters
+# 参数
 
-The gravity module contains the following parameters:
+重力模块包含以下参数:
 
 | Key                           | Type         | Example        |
 |-------------------------------|--------------|----------------|

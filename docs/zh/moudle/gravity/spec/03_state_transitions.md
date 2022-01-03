@@ -1,3 +1,3 @@
-# State Transitions
+# 状态转换
 
-This document describes the state transition operations pertaining to:
+本文档描述了与以下相关的状态转换操作:

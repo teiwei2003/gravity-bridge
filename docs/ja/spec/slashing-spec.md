@@ -1,48 +1,48 @@
-# Slash spec
+# スラッシュスペック
 
-This file names and documents the various slashing conditions we use in Gravity.
+このファイルは、Gravityで使用するさまざまなスラッシュ条件に名前を付けて文書化します。
 
-## GRAVSLASH-01: Signing fake validator set or tx batch evidence
+## GRAVSLASH-01:偽のバリデーターセットまたはtxバッチ証拠に署名する
 
-This slashing condition is intended to stop validators from signing over a validator set and nonce that has never existed on Cosmos. It works via an evidence mechanism, where anyone can submit a message containing the signature of a validator over a fake validator set. This is intended to produce the effect that if a cartel of validators is formed with the intention of submitting a fake validator set, one defector can cause them all to be slashed.
+このスラッシュ条件は、バリデーターがCosmosに存在したことのないバリデーターセットとナンスに署名するのを防ぐことを目的としています。これは証拠メカニズムを介して機能し、誰でも偽のバリデーターセットを介してバリデーターの署名を含むメッセージを送信できます。これは、偽のバリデーターセットを提出することを意図してバリデーターのカルテルが形成された場合、1人の亡命者がそれらすべてを大幅に削減できるという効果を生み出すことを目的としています。
 
-**Implementation considerations:**
+**実装に関する考慮事項:**
 
-The trickiest part of this slashing condition is determining that a validator set has never existed on Cosmos. To save space, we will need to clean up old validator sets. We could keep a mapping of validator set hash to true in the KV store, and use that to check if a validator set has ever existed. This is more efficient than storing the whole validator set, but its growth is still unbounded. It might be possible to use other cryptographic methods to cut down on the size of this mapping. It might be OK to prune very old entries from this mapping, but any pruning reduces the deterrence of this slashing condition.
+このスラッシュ条件の最も難しい部分は、バリデーターセットがCosmosに存在したことがないことを確認することです。スペースを節約するために、古いバリデーターセットをクリーンアップする必要があります。 KVストアでバリデーターセットハッシュのマッピングをtrueに維持し、それを使用してバリデーターセットが存在したかどうかを確認できます。これは、バリデーターセット全体を保存するよりも効率的ですが、その成長には制限がありません。他の暗号化方式を使用して、このマッピングのサイズを削減できる可能性があります。このマッピングから非常に古いエントリをプルーニングしても問題ない場合がありますが、プルーニングを行うと、このスラッシュ条件の抑止力が低下します。
 
-## GRAVSLASH-02: Failure to sign validator set update or tx batch
+## GRAVSLASH-02:バリデーターセットの更新またはtxバッチへの署名に失敗しました
 
-This slashing condition is triggered when a validator does not sign a validator set update or transaction batch which is produced by the Gravity Cosmos module. This prevents two bad scenarios- 
+このスラッシュ条件は、バリデーターがGravityCosmosモジュールによって生成されたバリデーターセットの更新またはトランザクションバッチに署名しない場合にトリガーされます。これにより、2つの悪いシナリオが防止されます-
 
-1. A validator simply does not bother to keep the correct binaries running on their system,
-2. A cartel of >1/3 validators unbond and then refuse to sign updates, preventing any validator set updates from getting enough signatures to be submitted to the Gravity Ethereum contract. If they prevent validator set updates for longer than the Cosmos unbonding period, they can no longer be punished for submitting fake validator set updates and tx batches (GRAVSLASH-01 and GRAVSLASH-02). 
+1.バリデーターは、システム上で正しいバイナリーを実行し続けることを気にしません。
+2. 1/3を超えるバリデーターのカルテルは、結合を解除してから更新への署名を拒否し、バリデーターセットの更新がGravityEthereum契約に送信するのに十分な署名を取得できないようにします。 Cosmosの非結合期間より長くバリデーターセットの更新を妨げた場合、偽のバリデーターセットの更新とtxバッチ(GRAVSLASH-01およびGRAVSLASH-02)を送信したことで罰せられることはなくなります。
 
-To deal with scenario 2, GRAVSLASH-02 will also need to slash validators who are no longer validating, but are still in the unbonding period. This means that when a validator leaves the validator set, they will need to keep running their equipment for 2 weeks. This is unusual for a Cosmos chain, and may not be accepted by the validators. Research is ongoing for ways to allow validators to stop signing before the unbonding period is fully over.
+シナリオ2に対処するために、GRAVSLASH-02は、検証を行っていないが、まだ結合解除期間にあるバリデーターもスラッシュする必要があります。これは、バリデーターがバリデーターセットを離れるとき、2週間機器を実行し続ける必要があることを意味します。これはCosmosチェーンでは珍しく、バリデーターによって受け入れられない場合があります。結合解除期間が完全に終了する前にバリデーターが署名を停止できるようにする方法についての研究が進行中です。
 
-## GRAVSLASH-03: Submitting incorrect Eth oracle claim - INTENTIONALLY NOT IMPLEMENTED
+## GRAVSLASH-03:誤ったEthオラクルクレームを送信-意図的に実装されていません
 
-The Ethereum oracle code (currently mostly contained in attestation.go), is a key part of Gravity. It allows the Gravity module to have knowledge of events that have occurred on Ethereum, such as deposits and executed batches. GRAVSLASH-03 is intended to punish validators who submit a claim for an event that never happened on Ethereum.
+イーサリアムのオラクルコード(現在、ほとんどがattestation.goに含まれています)は、Gravityの重要な部分です。これにより、Gravityモジュールは、デポジットや実行されたバッチなど、イーサリアムで発生したイベントを知ることができます。 GRAVSLASH-03は、イーサリアムで発生したことのないイベントの申し立てを提出したバリデーターを罰することを目的としています。
 
-**Implementation considerations**
+**実装に関する考慮事項**
 
-The only way we know whether an event has happened on Ethereum is through the Ethereum event oracle itself. So to implement this slashing condition, we slash validators who have submitted claims for a different event at the same nonce as an event that was observed by >2/3s of validators.
+イーサリアムでイベントが発生したかどうかを知る唯一の方法は、イーサリアムイベントオラクル自体を使用することです。したがって、このスラッシュ条件を実装するために、バリデーターの2/3以上によって観察されたイベントと同じナンスで、異なるイベントのクレームを送信したバリデーターをスラッシュします。
 
-Although well-intentioned, this slashing condition is likely not advisable for most applications of Gravity. This is because it ties the functioning of the Cosmos chain which it is installed on to the correct functioning of the Ethereum chain. If there is a serious fork of the Ethereum chain, different validators behaving honestly may see different events at the same event nonce and be slashed through no fault of their own. Widespread unfair slashing would be very disruptive to the social structure of the Cosmos chain.
+善意ではありますが、このスラッシュ条件は、Gravityのほとんどのアプリケーションにはお勧めできません。これは、インストールされているCosmosチェーンの機能をEthereumチェーンの正しい機能に結び付けるためです。イーサリアムチェーンの深刻な分岐点がある場合、正直に振る舞うさまざまなバリデーターは、同じイベントナンスでさまざまなイベントを確認し、独自の過失によって大幅に削減される可能性があります。広範囲にわたる不当な斬撃は、コスモスチェーンの社会構造に非常に混乱をもたらすでしょう。
 
-Maybe GRAVSLASH-03 is not necessary at all:
+たぶんGRAVSLASH-03はまったく必要ありません:
 
-The real utility of this slashing condition is to make it so that, if >2/3 of the validators form a cartel to all submit a fake event at a certain nonce, some number of them can defect from the cartel and submit the real event at that nonce. If there are enough defecting cartel members that the real event becomes observed, then the remaining cartel members will be slashed by this condition. However, this would require >1/2 of the cartel members to defect in most conditions. 
+このスラッシュ条件の実際の有用性は、バリデーターの2/3以上がカルテルを形成して、すべてが特定のナンスで偽のイベントを送信する場合、一部のバリデーターがカルテルから脱落して実際のイベントを送信できるようにすることです。そのナンスで。実際のイベントが観察されるのに十分な数の欠陥のあるカルテルメンバーがいる場合、残りのカルテルメンバーはこの条件によって大幅に削減されます。ただし、これには、ほとんどの条件でカルテルメンバーの1/2以上が欠陥を起こす必要があります。
 
-If not enough of the cartel defects, then neither event will be observed, and the Ethereum oracle will just halt. This is a much more likely scenario than one in which GRAVSLASH-03 is actually triggered.
+カルテルの欠陥が十分でない場合、どちらのイベントも観察されず、イーサリアムのオラクルはただ停止します。これは、GRAVSLASH-03が実際にトリガーされるシナリオよりもはるかに可能性の高いシナリオです。
 
-Also, GRAVSLASH-03 will be triggered against the honest validators in the case of a successful cartel. This could act to make it easier for a forming cartel to threaten validators who do not want to join.
+また、カルテルが成功した場合、GRAVSLASH-03は正直なバリデーターに対してトリガーされます。これは、形成中のカルテルが参加したくないバリデーターを脅かすのを容易にするように機能する可能性があります。
 
-## GRAVSLASH-04: Failure to submit Eth oracle claims
+## GRAVSLASH-04:Ethoracleクレームの送信に失敗しました
 
-This is similar to GRAVSLASH-03, but it is triggered against validators who do not submit an oracle claim that has been observed. In contrast to GRAVSLASH-03, GRAVSLASH-04 is intended to punish validators who stop participating in the oracle completely. 
+これはGRAVSLASH-03に似ていますが、観察されたオラクルクレームを送信しないバリデーターに対してトリガーされます。 GRAVSLASH-03とは対照的に、GRAVSLASH-04は、オラクルへの参加を完全に停止したバリデーターを罰することを目的としています。
 
-**Implementation considerations**
+**私補足に関する考慮事項**
 
-Unfortunately, GRAVSLASH-04 has the same downsides as GRAVSLASH-03 in that it ties the correct operation of the Cosmos chain to the Ethereum chain. Also, it likely does not incentivize much in the way of correct behavior. To avoid triggering GRAVSLASH-04, a validator simply needs to copy claims which are close to becoming observed. This copying of claims could be prevented by a commit-reveal scheme, but it would still be easy for a "lazy validator" to simply use a public Ethereum full node or block explorer, with similar effects on security. Therefore, the real usefulness of GRAVSLASH-04 is likely minimal
+残念ながら、GRAVSLASH-04には、Cosmosチェーンの正しい動作をEthereumチェーンに結び付けるという点で、GRAVSLASH-03と同じ欠点があります。また、それは正しい行動の方法であまりインセンティブを与えない可能性があります。 GRAVSLASH-04のトリガーを回避するには、バリデーターは、観察されることに近いクレームをコピーする必要があります。このクレームのコピーは、commit-revealスキームによって防ぐことができますが、「レイジーバリデーター」がパブリックEthereumフルノードまたはブロックエクスプローラーを使用するだけで、セキュリティに同様の影響を与えることは簡単です。したがって、GRAVSLASH-04の実際の有用性はおそらく最小限です
 
-Without GRAVSLASH-03 and GRAVSLASH-04, the Ethereum event oracle only continues to function if >2/3 of the validators voluntarily submit correct claims. Although the arguments against GRAVSLASH-03 and GRAVSLASH-04 are convincing, we must decide whether we are comfortable with this fact. We should probably make it possible to enable or disable GRAVSLASH-03 and GRAVSLASH-04 in the chain's parameters.
+GRAVSLASH-03およびGRAVSLASH-04がない場合、Ethereumイベントオラクルは、バリデーターの2/3以上が自発的に正しいクレームを送信した場合にのみ機能し続けます。 GRAVSLASH-03とGRAVSLASH-04に対する議論は説得力がありますが、この事実に満足しているかどうかを判断する必要があります。チェーンのパラメータでGRAVSLASH-03とGRAVSLASH-04を有効または無効にできるようにする必要があります。

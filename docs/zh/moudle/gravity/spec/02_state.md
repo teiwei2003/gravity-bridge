@@ -1,28 +1,28 @@
-# State
+# 状态
 
-## Params
+## 参数
 
-Params is a module-wide configuration structure that stores system parameters
-and defines overall functioning of the staking module.
+params 是一个模块范围的配置结构，用于存储系统参数
+并定义了 staking 模块的整体功能。
 
-- Params: `Paramsspace("gravity") -> legacy_amino(params)`
+- 参数:`Paramsspace("gravity") -> legacy_amino(params)`
 
 +++ <https://github.com/althea-net/cosmos-gravity-bridge/blob/main/module/proto/gravity/v1/genesis.proto#L72-L104>
 
 
 ### BatchTx
 
-Stored in two possible ways, first with a height and second without (unsafe). Unsafe is used for testing and export and import of state.
+以两种可能的方式存储，第一种有高度，第二种没有(不安全)。 Unsafe 用于测试和状态的导出和导入。
 
 | key          | Value | Type   | Encoding               |
 |--------------|-------|--------|------------------------|
 | `[]byte{0xa} + common.HexToAddress(tokenContract).Bytes() + nonce (big endian encoded)` | A batch of outgoing transactions | `types.BatchTx` | Protobuf encoded |
 
-### ValidatorSet
+### 验证器集
 
-This is the validator set of the bridge.
+这是桥的验证器集。
 
-Stored in two possible ways, first with a height and second without (unsafe). Unsafe is used for testing and export and import of state.
+以两种可能的方式存储，第一种有高度，第二种没有(不安全)。 Unsafe 用于测试和状态的导出和导入。
 
 | key          | Value | Type   | Encoding               |
 |--------------|-------|--------|------------------------|
@@ -30,7 +30,7 @@ Stored in two possible ways, first with a height and second without (unsafe). Un
 
 ### ValsetNonce
 
-The latest validator set nonce, this value is updated on every write. 
+最新的验证器设置随机数，该值在每次写入时更新。
 
 | key          | Value | Type   | Encoding               |
 |--------------|-------|--------|------------------------|
@@ -38,15 +38,15 @@ The latest validator set nonce, this value is updated on every write.
 
 ### SlashedValeSetNonce
 
-The latest validator set slash nonce. This is used to track which validator set needs to be slashed and which already has been. 
+最新的验证器设置Slash随机数。 这用于跟踪哪些验证器集需要被削减，哪些已经被削减。
 
 | Key            | Value | Type   | Encoding               |
 |----------------|-------|--------|------------------------|
 | `[]byte{0xf5}` | Nonce | uint64 | encoded via big endian |
 
-### Validator Set Confirmation
+### 验证器集确认
 
-When a validator signs over a validator set this is considered a `valSetConfirmation`, these are saved via the current nonce and the orchestrator address. 
+当验证器签署验证器集时，这被视为“valSetConfirmation”，这些通过当前随机数和协调器地址保存。
 
 
 | Key                                         | Value                  | Type                     | Encoding         |
@@ -55,7 +55,7 @@ When a validator signs over a validator set this is considered a `valSetConfirma
 
 ### ConfirmBatch
 
-When a validator confirms a batch it is added to the confirm batch store. It is stored using the orchestrator, token contract and nonce as the key. 
+当验证者确认一个批次时，它会被添加到确认批次存储中。 它使用编排器、令牌合约和随机数作为密钥存储。
 
 | Key                                                                 | Value                        | Type                    | Encoding         |
 |---------------------------------------------------------------------|------------------------------|-------------------------|------------------|
@@ -63,7 +63,7 @@ When a validator confirms a batch it is added to the confirm batch store. It is 
 
 ### OrchestratorValidator
 
-When a validator would like to delegate their voting power to another key. The value is stored using the orchestrator address as the key
+当验证者想将他们的投票权委托给另一个密钥时。 该值使用编排器地址作为键存储
 
 | Key                                 | Value                                        | Type     | Encoding         |
 |-------------------------------------|----------------------------------------------|----------|------------------|
@@ -71,7 +71,7 @@ When a validator would like to delegate their voting power to another key. The v
 
 ### EthAddress
 
-A validator has an associated counter chain address. 
+验证器具有关联的计数器链地址。
 
 | Key                                 | Value                                        | Type     | Encoding         |
 |-------------------------------------|----------------------------------------------|----------|------------------|
@@ -80,7 +80,7 @@ A validator has an associated counter chain address.
 
 ### ContractCallTx
 
-When a user requests a logic call to be executed on an opposing chain it is stored in a store within the gravity module.
+当用户请求在反向链上执行逻辑调用时，它会存储在重力模块内的存储中。
 
 | Key                                 | Value                                        | Type     | Encoding         |
 |-------------------------------------|----------------------------------------------|----------|------------------|
@@ -88,15 +88,15 @@ When a user requests a logic call to be executed on an opposing chain it is stor
 
 ### ConfirmLogicCall
 
-When a logic call is executed validators confirm the execution. 
+当执行逻辑调用时，验证器确认执行。
 
 | Key                                 | Value                                        | Type     | Encoding         |
 |-------------------------------------|----------------------------------------------|----------|------------------|
 |`[]byte{0xae} + []byte(invalidationId) + nonce (big endian encoded) + []byte(AccAddress)` | Confirmation of execution of the logic call | `types.MsgConfirmLogicCall` | Protobuf encoded |
 
-### OutgoingTx
+### 传出Tx
 
-Sets an outgoing transactions into the applications transaction pool to be included into a batch. 
+将传出事务设置到应用程序事务池中以包含在批处理中。
 
 | Key                                 | Value                                        | Type     | Encoding         |
 |-------------------------------------|----------------------------------------------|----------|------------------|
@@ -106,7 +106,7 @@ Sets an outgoing transactions into the applications transaction pool to be inclu
 
 ### SlashedBlockHeight
 
-Represents the latest slashed block height. There is always only a singe value stored. 
+表示最新的Slash块高度。 始终只存储一个单值。
 
 | Key                                 | Value                                        | Type     | Encoding         |
 |-------------------------------------|----------------------------------------------|----------|------------------|
@@ -114,7 +114,7 @@ Represents the latest slashed block height. There is always only a singe value s
 
 ### TokenContract & Denom
 
-A denom that is originally from a counter chain will be from a contract. The toke contract and denom are stored in two ways. First, the denom is used as the key and the value is the token contract. Second, the contract is used as the key, the value is the denom the token contract represents. 
+最初来自柜台链的面额将来自合约。 代币合约和分币以两种方式存储。 首先，denom作为key，value是token合约。 其次，以合约为key，value为代币合约所代表的面值。
 
 | Key                                 | Value                                        | Type     | Encoding         |
 |-------------------------------------|----------------------------------------------|----------|------------------|
@@ -126,15 +126,15 @@ A denom that is originally from a counter chain will be from a contract. The tok
 
 ### LastEventNonce
 
-The last observed event nonce. This is set when `TryAttestation()` is called. There is always only a single value held in this store.
+最后观察到的事件随机数。 这是在调用 `TryAttestation()` 时设置的。 此存储中始终只有一个值。
 
 | Key                                 | Value                                        | Type     | Encoding         |
 |-------------------------------------|----------------------------------------------|----------|------------------|
 | `[]byte{0xf2}` | Last observed event nonce| `uint64` | Big endian encoded |
 
-### LastObservedEthereumHeight 
+### LastObservedEthereumHeight
 
-This is the last observed height on ethereum. There will always only be a single value stored in this store.
+这是在以太坊上观察到的最后一个高度。 该存储中始终只存储一个值。
 
 | Key                                 | Value                                        | Type     | Encoding         |
 |-------------------------------------|----------------------------------------------|----------|------------------|

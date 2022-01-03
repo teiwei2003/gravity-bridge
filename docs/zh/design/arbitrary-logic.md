@@ -1,16 +1,16 @@
-# Arbitrary logic functionality
+# 任意逻辑功能
 
-Gravity includes the functionality to make arbitrary calls out to other Ethereum contracts. This can be used to allow the Cosmos chain to take actions on Ethereum. This functionality is very general. It can even be used to implement the core token transferring functionality of the bridge. However, there is one important caveat: these arbitrary logic contracts can transact with ERC20 tokens, but not any other kind of asset, such as ERC721. Interacting with non-ERC20 assets would require modifications to the core Gravity contract.
+Gravity 包括对其他以太坊合约进行任意调用的功能。这可用于允许 Cosmos 链对以太坊采取行动。这个功能非常通用。它甚至可以用于实现桥的核心令牌传输功能。但是，有一个重要的警告:这些任意逻辑合约可以与 ERC20 代币进行交易，但不能与任何其他类型的资产进行交易，例如 ERC721。与非 ERC20 资产交互需要修改核心 Gravity 合约。
 
-# Architecture
+# 建筑学
 
 `SetOutgoingLogicCall`
 
-Gravity offers a method which can be called by other modules to create an outgoing logic call. To use this method, a calling module must first assemble a logic call (more on this later). This is then submitted to the Gravity module with `SetOutgoingLogicCall`. From here, it is signed by the validators. Once it has enough signatures, a Gravity relayer will pick it up and submit it to the Gravity contract on Ethereum.
+Gravity 提供了一种可以被其他模块调用以创建传出逻辑调用的方法。要使用此方法，调用模块必须首先组装一个逻辑调用(稍后会详细介绍)。然后使用“SetOutgoingLogicCall”将其提交给 Gravity 模块。从这里开始，它由验证器签名。一旦它有足够的签名，一个 Gravity 中继器就会把它捡起来并提交给以太坊上的 Gravity 合约。
 
-`OutgoingLogicCall`
+`传出逻辑呼叫`
 
-`SetOutgoingLogicCall` takes an `OutgoingLogicCall` as an argument. Here is an explanation of its parameters:
+`SetOutgoingLogicCall` 将一个 `OutgoingLogicCall` 作为参数。下面是对其参数的解释:
 
 ```golang
 // OutgoingLogicCall represents an individual logic call from Gravity to ETH
@@ -25,27 +25,27 @@ type OutgoingLogicCall struct {
 }
 ```
 
-- Transfers: These are tokens that are sent to the logic contract before it is executed. The contract can then take actions using the tokens. For example, Gravity could send the logic contract some Uniswap LP tokens that it would then use to redeem liquidity from Uniswap.
-- Fees: These are tokens that will be paid by the core Gravity.sol contract to the Gravity relayer for executing the logic call. Fees are paid after the logic contract executes, so it is possible to pay the relayer with tokens that logic contract receives after executing, and then sends back to the core Gravity contract.
-- LogicContractAddress: This is the address of the logic contract that the core Gravity contract calls to execute the arbitrary logic. NOTE: this could be the actual logic contract, or it could be a batching contract that calls the logic contract a number of times. Examples of this in the `/solidity/test` folder.
-- Payload: This is the Ethereum abi encoded function call that will be executed on the logic contract. If you are using a batching middleware contract, then this abi encoded function call will itself contain an array of abi encoded function calls on the actual logic contract.
-- Timeout: The logic call will not execute if the block timestamp on Ethereum is higher than the value of this timeout. 
-- InvalidationScope and InvalidationNonce: More on these below:
+- 转移:这些是在执行之前发送到逻辑合约的代币。然后合约可以使用代币采取行动。例如，Gravity 可以向逻辑合约发送一些 Uniswap LP 代币，然后用于从 Uniswap 赎回流动性。
+- 费用:这些是核心 Gravity.sol 合约支付给 Gravity 中继器以执行逻辑调用的代币。费用在逻辑合约执行后支付，因此可以将逻辑合约执行后收到的代币支付给中继者，然后发送回核心 Gravity 合约。
+- LogicContractAddress:这是核心 Gravity 合约调用以执行任意逻辑的逻辑合约的地址。注意:这可能是实际的逻辑合约，也可能是多次调用逻辑合约的批处理合约。 `/solidity/test` 文件夹中的示例。
+- Payload:这是将在逻辑合约上执行的以太坊 abi 编码的函数调用。如果您使用的是批处理中间件合约，则此 abi 编码函数调用本身将包含实际逻辑合约上的 abi 编码函数调用数组。
+- 超时:如果以太坊上的区块时间戳高于此超时值，则不会执行逻辑调用。
+- InvalidationScope 和 InvalidationNonce:有关以下内容的更多信息:
 
 
-## Invalidation
+## 失效
 
-`invalidation_id` and `invalidation_nonce` are used as replay protection in the Gravity arbitrary logic call functionality.
+`invalidation_id` 和 `invalidation_nonce` 在 Gravity 任意逻辑调用功能中用作重放保护。
 
-When a submitLogicCall transaction is submitted to the Ethereum contract, the contract checks uses `invalidation_id` to access a key in the invalidation mapping. The value at this key is checked against the supplied `invalidation_nonce`. The logic call is only allowed to go through if the supplied `invalidation_nonce` is higher.
+当一个 submitLogicCall 交易被提交到以太坊合约时，合约检查使用 `invalidation_id` 来访问失效映射中的一个键。根据提供的“invalidation_nonce”检查该键的值。如果提供的`invalidation_nonce` 更高，则只允许逻辑调用通过。
 
-This can be used to implement many different invalidation schemes:
+这可用于实现许多不同的失效方案:
 
-### Easiest: timeout-only invalidation
-If you don't know what this all means, when you send a logic call to the Gravity module from the Cosmos side, just set the `invalidation_id` to an incrementing integer that you keep track of in your module. Set the `invalidation_nonce` to zero each time. This will create a new entry in the invalidation mapping on Ethereum for each logic batch, providing replay protection, while allowing batches to be completely independent.
+### 最简单的:仅超时失效
+如果您不知道这一切意味着什么，当您从 Cosmos 端向 Gravity 模块发送逻辑调用时，只需将 `invalidation_id` 设置为您在模块中跟踪的递增整数。每次将 `invalidation_nonce` 设置为零。这将为每个逻辑批次在以太坊上的失效映射中创建一个新条目，提供重放保护，同时允许批次完全独立。
 
-### Sequential invalidation
-If you don't want it to be possible to submit an early logic call after a later logic call, you can instead set the `invalidation_id` to zero each time, and use an incrementing integer for the `invalidation_nonce`. This makes it so that any logic call that is successfully submitted will invalidate all previous logic calls.
+### 顺序失效
+如果您不希望在稍后的逻辑调用之后提交早期的逻辑调用，您可以改为每次将 `invalidation_id` 设置为零，并为 `invalidation_nonce` 使用递增整数。这使得任何成功提交的逻辑调用都将使之前的所有逻辑调用无效。
 
-### For example: Token based invalidation
-In Gravity's core submitBatch functionality, we have batches of transactions for a given token invalidate earlier batches of that token, but not earlier batches of other tokens. To implement this on top of the submitLogicCall method, we would set the `invalidation_id` to the token address and keep an incrementing nonce for each token.
+### 例如:基于令牌的失效
+在 Gravity 的核心 submitBatch 功能中，我们有给定代币的批量交易使该代币的早期批次无效，但其他代币的早期批次无效。为了在 submitLogicCall 方法之上实现这一点，我们将 `invalidation_id` 设置为令牌地址，并为每个令牌保持一个递增的随机数。

@@ -1,19 +1,19 @@
-### Conceptual Goals:
-* Have an easily understood network layout based on docker or other infrastructure tooling
-* Have a one click deploy of a full network
-* Allow definition of deployment of a network in certain states or based on defined preconditions
+# 概念目标:
+* 具有基于 docker 或其他基础设施工具的易于理解的网络布局
+* 一键部署全网
+* 允许在某些状态下或基于定义的先决条件定义网络部署
 
-### Deliverable Goals:
-* Docker images for each component that are self-contained and defined to run as production assets
-* Test suite definition tool that uses said image in combination with arguments/files for the scenario
+### 可交付目标:
+* 每个组件的 Docker 镜像都是独立的并定义为作为生产资产运行
+* 测试套件定义工具，将所述图像与场景的参数/文件结合使用
 
-#### Current state:
-* Orchestrator
-  * Defined docker image with rust binaries.
-  * No files required, all settings brought in via image environment variables
-* Gravity module
-  * Docker build requires keys signed and rotated before build
-  * Environment variables/arguments are unused, all configuration comes from files
-* Ethereum
-  * Most likely to be changed or need specific starting states, least important to be deployable image because it isn't our product
-  * Can be implement with geth+genesis file, or a hardhat image
+#### 当前状态:
+* 编排器
+  * 使用 Rust 二进制文件定义 docker 镜像。
+  * 不需要文件，所有设置都通过图像环境变量引入
+* 重力模块
+  * Docker 构建需要在构建前对密钥进行签名和轮换
+  * 环境变量/参数未使用，所有配置来自文件
+* 以太坊
+  * 最有可能更改或需要特定的起始状态，可部署映像最不重要，因为它不是我们的产品
+  * 可以使用 geth+genesis 文件或安全帽镜像实现

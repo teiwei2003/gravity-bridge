@@ -1,61 +1,61 @@
-## Transaction batch creation
+## トランザクションバッチの作成
 
-Deposits (Ethereum > Cosmos transfers) happen as single operations. Each deposit creates a single oracle event that is voted on see [the deposit spce](deposit-spec.md). Withdraws are more complicated, since Ethereum gas is very expensive we want to spread out the cost of verifying the validator signatures across as many transactions as possible. Hence batches.
+デポジット(Ethereum> Cosmos転送)は単一の操作として発生します。各デポジットは、[デポジットspce](deposit-spec.md)を参照して投票される単一のオラクルイベントを作成します。イーサリアムガスは非常に高価であるため、引き出しはより複雑です。バリデーターの署名を検証するコストをできるだけ多くのトランザクションに分散させたいと考えています。したがって、バッチ。
 
-When a user calls MsgSendToEth they lock up some tokens and some fee value into the 'Gravity tx pool' which is a pool of transactions waiting to enter batches.
+ユーザーがMsgSendToEthを呼び出すと、いくつかのトークンといくつかの料金値が、バッチの入力を待機しているトランザクションのプールである「Gravitityxpool」にロックされます。
 
-Transaction batches contain only a single uniform ERC20 token token type for all transactions and fees.
+トランザクションバッチには、すべてのトランザクションと料金に対して単一の統一されたERC20トークントークンタイプのみが含まれます。
 
-Relayers observe the pool and query for what fees they might be paid for a batch of a given ERC20 contract. Relayers (or anyone) may request a batch be created for a specific token type. Once that is done the validators sign off on this batch via their orchestrators.
+中継者はプールを監視し、特定のERC20契約のバッチに対して支払われる可能性のある料金を照会します。中継者(または誰でも)は、特定のトークンタイプのバッチの作成を要求できます。それが完了すると、バリデーターはオーケストレーターを介してこのバッチを承認します。
 
-Batch creation may fail if there are no transactions of that token type in the pool or if the new batch would not have a higher total fee amount than an existing batch that is waiting to execute.
+プールにそのトークンタイプのトランザクションがない場合、または新しいバッチの合計料金が、実行を待機している既存のバッチよりも高くない場合、バッチの作成が失敗する可能性があります。
 
-At this point any relayer (the one that requested the batch or otherwise) may bundle those signatures and submit the result to Ethereum. Paying the gas fees in return for all of the fees for all the transactions in that batch.
+この時点で、任意の中継者(バッチまたはその他を要求した中継者)がそれらの署名をバンドルし、結果をイーサリアムに送信できます。そのバッチ内のすべてのトランザクションのすべての料金と引き換えにガス料金を支払う。
 
-While relayers request batches they are created by the Gravity Cosmos module itself, with the highest fee transactions in the pool for that particular token type going first. Up to a current max of 100 transactions per batch.
+リレーがバッチを要求する間、それらはGravity Cosmosモジュール自体によって作成され、その特定のトークンタイプのプールで最も高い料金のトランザクションが最初に実行されます。バッチごとに現在最大100トランザクション。
 
-While transactions are in the pool it is possible for the user to request a refund and get their tokens back by sending a MsgCancelSendToEth but this is no longer possible once a transaction is in a batch. As it may be possible for that batch to execute on Ethereum as soon as signatures start coming in.
+トランザクションがプール内にある間、ユーザーはMsgCancelSendToEthを送信することで払い戻しをリクエストし、トークンを取り戻すことができますが、トランザクションがバッチに入ると、これは不可能になります。署名が入り始めるとすぐにそのバッチがイーサリアムで実行される可能性があるため。
 
-Once a MsgSendToEth transaction is out of the pool and in a batch one of three things must happen to the funds.
+MsgSendToEthトランザクションがプールから出て、バッチで3つのことの1つがファンドに発生する必要があります。
 
-1. The batch executes on Ethereum, the transfer is complete, locked tokens are burned on Cosmos
-2. The batch times out, once it's timeout height in blocks is reached, the locked tokens are then returned to the pool
-3. A later batch is executed, invalidating this one and making it impossible to submit. The locked tokens are then returned to the pool
+1.バッチはイーサリアムで実行され、転送が完了し、ロックされたトークンがコスモスで書き込まれます
+2.バッチがタイムアウトし、ブロック単位のタイムアウトの高さに達すると、ロックされたトークンがプールに返されます
+3.後のバッチが実行され、これが無効になり、送信できなくなります。ロックされたトークンはプールに戻されます
 
-## Creation of more profitable batches
+## より収益性の高いバッチの作成
 
-With the general flow of batches resolved we should focus in on the largest problem of batch creation. Ensuring that permissionless requests always result in a batch that may be relayed. Even given a large amount of low fee spam and hostile batch requestors.
+バッチの一般的なフローが解決されたら、バッチ作成の最大の問題に焦点を当てる必要があります。許可のない要求が常に中継される可能性のあるバッチになることを保証します。大量の低料金のスパムと敵対的なバッチリクエスターが与えられたとしても。
 
-Suppose we have an infinite stream of low fee spam transactions going
-into the Gravity tx pool. Any given batch creation event will then lock
-up high fee 'good transactions' with dozens of spam transactions.
+低料金のスパムトランザクションが無限に流れているとします。
+重力txプールに。その後、任意のバッチ作成イベントがロックされます
+数十のスパムトランザクションで高額の「良いトランザクション」を増やします。
 
-In this case no relayer will ever chose to relay a batch because all of
-them will be unprofitable.
+この場合、すべてのリレーがバッチをリレーすることを選択することはありません。
+それらは不採算になります。
 
-In order to ensure that profitable batches are eventually created we
-must avoid locking up the high fee 'good transactions' into obviously
-bad batches. To add to the difficulty we don't actually know what any
-token in this process is worth or what ETH gas costs.
+収益性の高いバッチが最終的に作成されることを保証するために、
+高額の「良い取引」を明らかに閉じ込めないようにする必要があります
+悪いバッチ。難しさを増すために、私たちは実際に何を知らない
+このプロセスのトークンは価値があるか、ETHガスのコストです。
 
-The solution this patch provides is to ensure that a new batch always
-has higher fees than the last batch. This means that even if there are
-infinite spam transactions, and infinite spamming of the permission less
-create batch request batch creation will halt long enough for enough
-good transactions to build up in the pool and a new more profitable
-batch to be created.
+このパッチが提供する解決策は、常に新しいバッチを確保することです
+最後のバッチよりも高い料金がかかります。これは、たとえあるとしても
+無限のスパムトランザクション、および許可の無限のスパムが少ない
+バッチリクエストの作成バッチの作成は、十分な時間停止します
+プールで構築するための良好なトランザクションと新しいより収益性の高い
+作成するバッチ。
 
-Over a long enough timescale the old batches either time out. Returning
-profitable transactions to the pool to create a new even better batch. Or
-the profitability of the latest batch continues to increase until one is
-relayed, also freeing the previous good transactions to go into the next
-batch.
+十分に長いタイムスケールで、古いバッチはいずれかのタイムアウトになります。戻る
+新しいさらに良いバッチを作成するためのプールへの収益性の高いトランザクション。または
+最新のバッチの収益性は、1つになるまで増加し続けます
+中継され、前の良好なトランザクションを解放して次のトランザクションに移します
+バッチ。
 
-So given this condition we can say that no matter the inputs a
-successful batch will eventually be created.
+したがって、この条件が与えられると、入力に関係なく、
+成功したバッチは最終的に作成されます。
 
-## Notes on relaying preferences
+## 中継設定に関する注意
 
-Remember the relayers can freely observe prices on Ethereum and know what the exchange rate for a given token is. They may also have different preferences for which token they are paid in, for example if you already have DAI liquidating that DAI to ETH to pay for more batches is cheaper per DAI. A $200 DAI reward is only worth $150 if it costs you $50 to exchange it for ETH on uniswap. But if you already have $1k in DAI that $50 doesn't seem so bad.
+中継者はイーサリアムの価格を自由に観察し、特定のトークンの為替レートを知ることができることを忘れないでください。また、支払われるトークンの設定が異なる場合もあります。たとえば、DAIがすでにDAIをETHに清算して、より多くのバッチを支払う場合は、DAIごとの方が安くなります。ユニスワップでETHと交換するのに50ドルかかる場合、200ドルのDAI報酬は150ドルの価値しかありません。しかし、すでにDAIに1,000ドルある場合、50ドルはそれほど悪くはないようです。
 
-This is why batch requests must be permissionless and open. Not only are the prices for any given token unknowable by the Cosmos chain itself without a very complicated token price oracle but the relayers preference is totally subjective.
+これが、バッチリクエストが許可なしでオープンでなければならない理由です。非常に複雑なトークン価格オラクルがなければ、コスモスチェーン自体が特定のトークンの価格を知ることができないだけでなく、中継者の好みは完全に主観的です。

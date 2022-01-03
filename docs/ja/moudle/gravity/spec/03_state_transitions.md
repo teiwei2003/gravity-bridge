@@ -1,3 +1,3 @@
-# State Transitions
+# 状態遷移
 
-This document describes the state transition operations pertaining to:
+このドキュメントでは、以下に関連する状態遷移操作について説明します。

@@ -1,6 +1,6 @@
-# Events
+# イベント
 
-The gravity module emits the following events:
+重力モジュールは、次のイベントを発行します。
 
 ## EndBlocker
 

@@ -1,48 +1,47 @@
-# Gravity bridge relaying semantics
+# 重力桥中继语义
 
-This document is designed to assist developers in implementing alternate Gravity relayers. The two major components of the Orchestrator which interact with Ethereum. The Gravity bridge has been designed for increased efficiency, not for ease of use. This means there are many implicit requirements of these external binaries which this document does it's best to make explicit.
+本文档旨在帮助开发人员实现替代 Gravity 中继器。与以太坊交互的 Orchestrator 的两个主要组件。 Gravity 桥的设计是为了提高效率，而不是为了易于使用。这意味着这些外部二进制文件有许多隐含的要求，本文档最好明确说明这些要求。
 
-The Gravity `orchestrator` is described in [overview.md](overview.md) it's a combination of three distinct roles that need to be performed by external binaries in the Gravity bridge. This document highlights the requirements of the `relayer` which is one of those roles included in the `orchestrator`.
+Gravity `orchestrator` 在 [overview.md](overview.md) 中有描述，它是三个不同角色的组合，需要由 Gravity 桥中的外部二进制文件执行。本文档重点介绍了“中继器”的要求，它是“编排器”中包含的角色之一。
 
-## Semantics for Validator set update relaying
+## 验证器集更新中继的语义
 
-### Sorting and Ordering of the Validator set and signatures
+### Validator 集和签名的排序和排序
 
-When updating the validator set in the Gravity contract you must provide a copy of the old validator set. This _MUST_ only be taken from the last ValsetUpdated event on the Ethereum chain.
+在更新 Gravity 合约中的验证器集时，您必须提供旧验证器集的副本。此_必须_仅取自以太坊链上的最后一个 ValsetUpdated 事件。
 
-Providing the old validator set is part of a storage optimization, instead of storing the entire validator set in Ethereum storage it is instead provided by each caller and stored in the much cheaper Ethereum event queue. No sorting of any kind is performed in the Gravity contract, meaning the list of validators and their new signatures must be submitted in exactly the same order as the last call.
+提供旧的验证器集是存储优化的一部分，而不是将整个验证器集存储在以太坊存储中，而是由每个调用者提供并存储在便宜得多的以太坊事件队列中。 Gravity 合约中不进行任何排序，这意味着验证者列表及其新签名必须以与上次调用完全相同的顺序提交。
 
-For the purpose of normal operation this requirement can be shortened to 'sort the validators by descending power, and by Eth address bytes where power is equal'. Since the Cosmos module produces the validator sets they should always come in order. But a flaw in this sorting method that caused an unsorted validator set to make it's way into the chain would halt valset updates and essentially decouple the bridge unless your implementation is smart enough to take a look at the last submitted order rather than blindly following sorting.
+出于正常操作的目的，此要求可以缩短为“按功率降序对验证器进行排序，并按功率相等的 Eth 地址字节排序”。由于 Cosmos 模块生成验证器集，因此它们应始终按顺序排列。但是这种排序方法中的一个缺陷会导致未排序的验证器集进入链中，这将停止 valset 更新并基本上解耦桥，除非您的实现足够聪明以查看最后提交的顺序而不是盲目地遵循排序。
 
-### Deciding what Validator set to relay
+### 决定什么验证器设置为中继
+Cosmos 链只是产生一个验证器集流，它不会对它们的中继方式做出任何判断。 由中继器实现决定如何优化此中继操作的 gas 成本。
 
-The Cosmos chain simply produces a stream of validator sets, it does not make any judgement on how they are relayed. It's up to the relayer implementation to determine how to optimize the gas costs of this relaying operation.
+例如，假设我们有验证器集“A、B、C 和 D”，当存储中的最后一个 Gravity 验证器集快照与当前活动的验证器集之间存在 5% 的功率差异时，会创建每个验证器集。
 
-For example lets say we had validator sets `A, B, C, and D` each is created when there is a 5% power difference between the last Gravity validator set snapshot in the store and the currently active validator set.
-
-5% is an arbitrary constant. The specific value chosen here is a tradeoff made by the chain between how up to date the Ethereum validator set is and the cost to keep it updated. The higher this value is the lower the portion of the voting validator set is needed to highjack the bridge in the worst case. If we made a new validator set update every block 66% would need to collude, the 5% change threshold means 61% of the total voting power colluding in a given validator set may be able to steal the funds in the bridge.
+5% 是一个任意常数。 此处选择的特定值是链在以太坊验证器集的更新程度与保持更新的成本之间进行的权衡。 该值越高，在最坏的情况下劫持网桥所需的投票验证器集的部分就越低。 如果我们更新每个区块 66% 需要串通的新验证器集，那么 5% 的更改阈值意味着在给定验证器集中串通的总投票权的 61% 可能能够窃取桥中的资金。
 
 ```
 A -> B -> C -> D
      5%  10%   15%
 ```
 
-The relayer should iterate over the event history for the Gravity Ethereum contract, it will determine that validator set A is currently in the Gravity bridge. It can choose to either relay validator sets B, C and then D or simply submit validator set D. Provided all validators have signed D it has more than 66% voting power and can pass on it's own. Without paying potentially several hundred dollars more in EThereum to relay the intermediate sets.
+中继器应该遍历 Gravity Ethereum 合约的事件历史，它将确定验证器集 A 当前位于 Gravity 桥中。它可以选择中继验证者集 B、C 和 D，或者简单地提交验证者集 D。如果所有验证者都签署了 D，则它拥有超过 66% 的投票权，并且可以自行传递。无需在 EThereum 中额外支付数百美元来中继中间集。
 
-Performing this check locally somehow, before submitting transactions, is essential to a cost effective relayer implementation. You can either use a local Ethereum signing implementation and sum the powers and signatures yourself, or you can simply use the `eth_call()` Ethereum RPC to simulate the call on your EThereum node.
+在提交交易之前以某种方式在本地执行此检查对于具有成本效益的中继器实现至关重要。您可以使用本地以太坊签名实现并自己总结权力和签名，或者您可以简单地使用“eth_call()”以太坊 RPC 来模拟 EThereum 节点上的调用。
 
-Note that `eth_call()` often has funny gotchas. All calls fail on Geth based implementations if you don't have any Ethereum to pay for gas, while on Parity based implementations your gas inputs are mostly ignored and an accurate gas usage is returned.
+请注意，`eth_call()` 经常有一些有趣的问题。如果您没有任何以太坊来支付 gas，那么基于 Geth 的所有调用都会失败，而在基于 Parity 的实现中，您的 gas 输入大多被忽略，并返回准确的 gas 使用量。
 
-## Semantics for transaction batch relaying
+## 交易批量中继的语义
 
-In order to submit a transaction batch you also need to submit the last set of validators and their powers as outlined in [the validator set section](### Sorting and Ordering of the Validator set and signatures). This is to facilitate the same storage optimization mentioned there.
+为了提交交易批次，您还需要提交最后一组验证器及其权力，如[验证器集部分](###验证器集和签名的排序和排序)中所述。这是为了促进那里提到的相同存储优化。
 
-### Deciding what batch to relay
+### 决定要中继的批次
 
-Making a decision about which batch to relay is very different from deciding which validator set to relay. Batch relaying is primarily motivated by fees, not by a desire to maintain the integrity of the bridge. So the decision mostly comes down to fee computation, this is further complicated by the concept of 'batch requests'. Which is an unpermissioned transaction that requests the Gravity module generate a new batch for a specific token type.
+决定中继哪个批次与决定中继哪个验证器非常不同。批量中继的主要动机是费用，而不是维护网桥完整性的愿望。因此，决定主要归结为费用计算，“批量请求”的概念使这一点更加复杂。这是一个未经许可的事务，它请求 Gravity 模块为特定的令牌类型生成一个新批次。
 
-Batch requests are designed to allow the user to withdraw their tokens from the send to Ethereum tx pool at any time up until a relayer shows interest in actually relaying them. While transactions are in the pool there's no risk of a double spend if the user is allowed to withdraw them by sending a MsgCancelSendToEth. Once the transaction enters a batch due to a 'request batch' that is no longer the case and the users funds must remain locked until the Oracle informs the Gravity module that the batch containing the users tokens has become somehow invalid to submit or has been executed on Ethereum.
+批量请求旨在允许用户随时从发送到以太坊 tx 池中提取他们的代币，直到中继者表现出对实际中继它们的兴趣为止。当交易在池中时，如果允许用户通过发送 MsgCancelSendToEth 来提取它们，就不会有双花的风险。一旦交易由于不再是“请求批次”而进入批次并且用户资金必须保持锁定状态，直到 Oracle 通知 Gravity 模块包含用户令牌的批次已变得无法提交或已被执行在以太坊上。
 
-A relayer uses the query endpoint `BatchFees` to iterate over the send to Eth tx pool for each token type, the relayer can then observe the price for the ERC20 tokens being relayed on a dex and compute the gas cost of executing the batch (via `eth_call()`) as well as the gas cost of liquidating the earnings on a dex if desired. Once a relayer determines that a batch is good and profitable it can send a `MsgRequestBatch` and the batch will be created for the relayer to relay.
+中继器使用查询端点 `BatchFees` 迭代发送到每个令牌类型的 Eth tx 池，然后中继器可以观察在 dex 上中继的 ERC20 令牌的价格并计算执行批处理的燃料成本(通过`eth_call()`) 以及在需要时清算 dex 收益的 gas 成本。一旦中继器确定批次良好且有利可图，它可以发送“MsgRequestBatch”，并且将为中继器创建批次以进行中继。
 
-There are also existing batches, which the relayer should also judge for profitability and make an attempt at relaying using much the same method.
+也有现有的批次，中继者也应该判断其盈利能力，并尝试使用几乎相同的方法进行中继。

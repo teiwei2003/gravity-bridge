@@ -1,33 +1,33 @@
-# Architecture Decision Records (ADR)
+# アーキテクチャ決定記録(ADR)
 
-This is a location to record all high-level architecture decisions For the Gravity Bridge.
+これは、GravityBridgeのすべての高レベルのアーキテクチャ決定を記録する場所です。
 
-An Architectural Decision (**AD**) is a software design choice that addresses a functional or non-functional requirement that is architecturally significant.
-An Architecturally Significant Requirement (**ASR**) is a requirement that has a measurable effect on a software system’s architecture and quality.
-An Architectural Decision Record (**ADR**) captures a single AD, such as often done when writing personal notes or meeting minutes; the collection of ADRs created and maintained in a project constitute its decision log. All these are within the topic of Architectural Knowledge Management (AKM).
+アーキテクチャ上の決定(** AD **)は、アーキテクチャ的に重要な機能要件または非機能要件に対処するソフトウェア設計の選択です。
+アーキテクチャ的に重要な要件(** ASR **)は、ソフトウェアシステムのアーキテクチャと品質に測定可能な影響を与える要件です。
+Architectural Decision Record(** ADR **)は、個人的なメモを書いたり議事録を書いたりするときによく行われるように、単一のADをキャプチャします。プロジェクトで作成および維持されるADRのコレクションは、その決定ログを構成します。これらはすべて、Architectural Knowledge Management(AKM)のトピックに含まれています。
 
-You can read more about the ADR concept in this [blog post](https://product.reverb.com/documenting-architecture-decisions-the-reverb-way-a3563bb24bd0#.78xhdix6t).
+ADRの概念について詳しくは、この[ブログ投稿](https://product.reverb.com/documenting-architecture-decisions-the-reverb-way-a3563bb24bd0#.78xhdix6t)を参照してください。
 
-## Rationale
+## 理論的根拠
 
-ADRs are intended to be the primary mechanism for proposing new feature designs and new processes, for collecting community input on an issue, and for documenting the design decisions.
-An ADR should provide:
+ADRは、新しい機能の設計と新しいプロセスを提案し、問題に関するコミュニティの意見を収集し、設計上の決定を文書化するための主要なメカニズムとなることを目的としています。
+ADRは以下を提供する必要があります。
 
-- Context on the relevant goals and the current state
-- Proposed changes to achieve the goals
-- Summary of pros and cons
-- References
-- Changelog
+-関連する目標と現在の状態に関するコンテキスト
+-目標を達成するために提案された変更
+-賛否両論のまとめ
+-参考文献
+-変更ログ
 
-Note the distinction between an ADR and a spec. The ADR provides the context, intuition, reasoning, and
-justification for a change in architecture, or for the architecture of something
-new. The spec is much more compressed and streamlined summary of everything as
-it stands today.
+ADRと仕様の違いに注意してください。 ADRは、コンテキスト、直感、推論、および
+アーキテクチャの変更、または何かのアーキテクチャの正当化
+新着。仕様は、すべての要約がはるかに圧縮され、合理化されています。
+それは今日立っています。
 
-If recorded decisions turned out to be lacking, convene a discussion, record the new decisions here, and then modify the code to match.
+記録された決定が不足していることが判明した場合は、ディスカッションを招集し、ここに新しい決定を記録してから、一致するようにコードを変更します。
 
-## ADR Table of Contents
+## ADR目次
 
-### Accepted
+### 承認済み
 
-### Proposed
+### 提案

@@ -1,160 +1,160 @@
-# Messages
+# メッセージ
 
-In this section we describe the processing of the gravity messages and the corresponding updates to the state. All created/modified state objects specified by each message are defined within the [state](./02_state_transitions.md) section.
+このセクションでは、重力メッセージの処理とそれに対応する状態の更新について説明します。各メッセージで指定されたすべての作成/変更された状態オブジェクトは、[state](./02_state_transitions.md)セクション内で定義されます。
 
 ### MsgDelegateKeys
 
-Allows validators to delegate their voting responsibilities to a given key. This Key can be used to authenticate oracle claims. 
+バリデーターが投票の責任を特定のキーに委任できるようにします。このキーは、オラクルクレームを認証するために使用できます。
 
 +++ https://github.com/althea-net/cosmos-gravity-bridge/blob/main/module/proto/gravity/v1/msgs.proto#L38-L40
 
 +++ https://github.com/althea-net/cosmos-gravity-bridge/blob/main/module/proto/gravity/v1/msgs.proto#L56-60
 
-This message is expected to fail if: 
+このメッセージは、次の場合に失敗すると予想されます。
 
-- The validator address is incorrect. 
-  - The address is empty (`""`)
-  - Not a length of 20
-  - Bech32 decoding fails
-- The orchestrator address is incorrect.
-  - The address is empty (`""`)
-  - Not a length of 20
-  - Bech32 decoding fails
-- The ethereum address is incorrect.
-  - The address is empty (`""`)
-  - Not a length of 42
-  - Does not start with 0x
-- The validator is not present in the validator set.
+-バリデーターアドレスが正しくありません。
+  -アドレスが空です( `" "`)
+  -20の長さではありません
+  -Bech32デコードが失敗する
+-オーケストレーターのアドレスが正しくありません。
+  -アドレスが空です( `" "`)
+  -20の長さではありません
+  -Bech32デコードが失敗する
+-イーサリアムアドレスが正しくありません。
+  -アドレスが空です( `" "`)
+  -長さ42ではありません
+  -0xで始まらない
+-バリデーターがバリデーターセットに存在しません。
 
 ### MsgSubmitEthereumTxConfirmation
 
-When the gravity daemon witnesses a complete validator set within the gravity module, the validator submits a signature of a message containing the entire validator set. 
+重力デーモンが重力モジュール内の完全なバリデーターセットを目撃すると、バリデーターはバリデーターセット全体を含むメッセージの署名を送信します。
 
 +++ https://github.com/althea-net/cosmos-gravity-bridge/blob/main/module/proto/gravity/v1/msgs.proto#L79-84
 
-This message is expected to fail if:
+このメッセージは、次の場合に失敗すると予想されます。
 
-- If the validator set is not present.
-- The signature is encoded incorrectly.
-- Signature verification of the ethereum key fails.
-- If the signature submitted has already been submitted previously.
-- The validator address is incorrect. 
-  - The address is empty (`""`)
-  - Not a length of 20
-  - Bech32 decoding fails
+-バリデーターセットが存在しない場合。
+-署名が正しくエンコードされていません。
+-イーサリアムキーの署名検証が失敗します。
+-提出された署名がすでに提出されている場合。
+-バリデーターアドレスが正しくありません。
+  -アドレスが空です( `" "`)
+  -20の長さではありません
+  -Bech32デコードが失敗する
 
 
 ### MsgSendToEthereum
 
-When a user wants to bridge an asset to an EVM. If the token has originated from the cosmos chain it will be held in a module account. If the token is originally from ethereum it will be burned on the cosmos side.
+ユーザーがアセットをEVMにブリッジしたい場合。トークンがコスモスチェーンから発信された場合、モジュールアカウントに保持されます。トークンが元々イーサリアムからのものである場合、それはコスモス側で燃やされます。
 
-> Note: this message will later be removed when it is included in a batch.
+>注:このメッセージは、後でバッチに含まれるときに削除されます。
 
 
 +++ https://github.com/althea-net/cosmos-gravity-bridge/blob/main/module/proto/gravity/v1/msgs.proto#L100-109
 
-This message will fail if:
+このメッセージは次の場合に失敗します。
 
-- The sender address is incorrect.
-  - The address is empty (`""`)
-  - Not a length of 20
-  - Bech32 decoding fails
-- The denom is not supported.
-- If the token is cosmos originated
-  - The sending of the token to the module account fails
-- If the token is non-cosmos-originated.
-  - If sending to the module account fails
-  - If burning of the token fails
+-送信者アドレスが正しくありません。
+  -アドレスが空です( `" "`)
+  -20の長さではありません
+  -Bech32デコードが失敗する
+-デノムはサポートされていません。
+-トークンがコスモス起源の場合
+  -モジュールアカウントへのトークンの送信に失敗します
+-トークンがコスモス以外のものである場合。
+  -モジュールアカウントへの送信が失敗した場合
+  -トークンの書き込みが失敗した場合
 
 ### MsgRequestBatchTx
 
-When enough transactions have been added into a batch, a user or validator can call send this message in order to send a batch of transactions across the bridge. 
+十分な数のトランザクションがバッチに追加されると、ユーザーまたは検証者は、ブリッジを介してトランザクションのバッチを送信するために、このメッセージの送信を呼び出すことができます。
 
 +++ https://github.com/althea-net/cosmos-gravity-bridge/blob/main/module/proto/gravity/v1/msgs.proto#L122-125
 
-This message will fail if:
+このメッセージは次の場合に失敗します。
 
-- The denom is not supported.
-- Failure to build a batch of transactions.
-- If the orchestrator address is not present in the validator set
+-デノムはサポートされていません。
+-トランザクションのバッチの構築に失敗しました。
+-オーケストレーターアドレスがバリデーターセットに存在しない場合
 
 ### MsgConfirmBatch
 
-When a `MsgRequestBatchTx` is observed, validators need to sign batch request to signify this is not a maliciously created batch and to avoid getting slashed. 
+`MsgRequestBatchTx`が観察された場合、バリデーターはバッチリクエストに署名して、これが悪意を持って作成されたバッチではないことを示し、スラッシュが発生しないようにする必要があります。
 
 +++ https://github.com/althea-net/cosmos-gravity-bridge/blob/main/module/proto/gravity/v1/msgs.proto#L137-143
 
-This message will fail if:
+このメッセージは次の場合に失敗します。
 
-- The batch does not exist
-- If checkpoint generation fails
-- If a none validator address or delegated address 
-- If the counter chain address is empty or incorrect.
-- If counter chain address fails signature validation
-- If the signature was already presented in a previous message
+-バッチが存在しません
+-チェックポイントの生成が失敗した場合
+-バリデーターなしのアドレスまたは委任されたアドレスの場合
+-カウンタチェーンアドレスが空または正しくない場合。
+-カウンターチェーンアドレスが署名の検証に失敗した場合
+-署名が前のメッセージですでに提示されている場合
 
 ### MsgConfirmLogicCall
 
-When a logic call request has been made, it needs to be confirmed by the bridge validators. Each validator has to submit a confirmation of the logic call being executed.
+論理呼び出し要求が行われた場合、それはブリッジバリデーターによって確認される必要があります。各バリデーターは、実行されているロジック呼び出しの確認を送信する必要があります。
 
 +++ https://github.com/althea-net/cosmos-gravity-bridge/blob/main/module/proto/gravity/v1/msgs.proto#L155-161
 
-This message will fail if:
+このメッセージは次の場合に失敗します。
 
-- The id encoding is incorrect
-- The outgoing logic call which is confirmed can not be found
-- Invalid checkpoint generation
-- Signature decoding failed
-- The address calling this function is not a validator or its delegated key
-- The counter chain address is incorrect or empty
-- Counter party signature verification failed
-- A duplicate signature is observed
+-IDエンコーディングが正しくありません
+-確認された発信ロジック呼び出しが見つかりません
+-無効なチェックポイントの生成
+-署名のデコードに失敗しました
+-この関数を呼び出すアドレスは、バリデーターまたはその委任されたキーではありません
+-カウンターチェーンアドレスが正しくないか、空です
+-カウンターパーティの署名の検証に失敗しました
+-重複する署名が観察されます
 
 ### MsgDepositClaim
 
-When a message to deposit funds into the gravity contract is created a event will be omitted and observed a message will be submitted confirming the deposit.
+重力契約に資金を預けるためのメッセージが作成されると、イベントは省略され、預け入れを確認するメッセージが送信されます。
 
 +++ https://github.com/althea-net/cosmos-gravity-bridge/blob/main/module/proto/gravity/v1/msgs.proto#L170-181
 
-This message will fail if:
+このメッセージは次の場合に失敗します。
 
-- The validator is unknown
-- The validator is not in the active set
-- If the creation of attestation fails
+-バリデーターは不明です
+-バリデーターがアクティブセットにありません
+-アテステーションの作成が失敗した場合
 
 ### MsgWithdrawClaim
 
-When a user requests a withdrawal from the gravity contract a event will omitted by the counter party chain. This event will be observed by a bridge validator and submitted to the gravity module.
+ユーザーが重力契約からの撤退を要求すると、カウンターパーティチェーンによってイベントが省略されます。このイベントは、ブリッジバリデーターによって監視され、重力モジュールに送信されます。
 
 
 +++ https://github.com/althea-net/cosmos-gravity-bridge/blob/main/module/proto/gravity/v1/msgs.proto#L187-193
 
-This message will fail if:
+このメッセージは次の場合に失敗します。
 
-- The validator is unknown
-- The validator is not in the active set
-- If the creation of attestation fails
+-バリデーターは不明です
+-バリデーターがアクティブセットにありません
+-アテステーションの作成が失敗した場合
 
 ### MsgERC20DeployedClaim
 
-This message allows the cosmos chain to learn information about the denom from the counter party chain.
+このメッセージにより、コスモスチェーンはカウンターパーティチェーンからデノムに関する情報を学習できます。
 
 +++ https://github.com/althea-net/cosmos-gravity-bridge/blob/main/module/proto/gravity/v1/msgs.proto#L200-209
 
-This message will fail if:
+このメッセージは次の場合に失敗します。
 
-- The validator is unknown
-- The validator is not in the active set
-- If the creation of attestation fails
+-バリデーターは不明です
+-バリデーターがアクティブセットにありません
+-アテステーションの作成が失敗した場合
 
 ### MsgLogicCallExecutedClaim
 
-This informs the chain that a logic call has been executed. This message is submitted by bridge validators when they observe a event containing details around the logic call. 
+これは、ロジック呼び出しが実行されたことをチェーンに通知します。このメッセージは、ブリッジバリデーターがロジックコールに関する詳細を含むイベントを監視したときに送信されます。
 
 +++ https://github.com/althea-net/cosmos-gravity-bridge/blob/main/module/proto/gravity/v1/msgs.proto#L215-221
 
-This message will fail if: 
+このメッセージは次の場合に失敗します。
 
-- The validator submitting the claim is unknown
-- The validator is not in the active set
-- Creation of attestation has failed.
+-クレームを提出したバリデーターは不明です
+-バリデーターがアクティブセットにありません
+-アテステーションの作成に失敗しました。

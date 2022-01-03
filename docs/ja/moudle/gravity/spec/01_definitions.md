@@ -1,55 +1,55 @@
-# Definitions
+# 定義
 
-This section outlines terminology used throughout the spec and code.
+このセクションでは、仕様とコード全体で使用される用語の概要を説明します。
 
-### Operator
+### 演算子
 
-This is a person (or people) who control a Cosmos SDK validator node. This is also called `valoper` or "Validator Operator" in the Cosmos SDK staking section
+これは、Cosmos SDKバリデーターノードを制御する1人または複数の人です。これは、CosmosSDKステーキングセクションでは「valoper」または「ValidatorOperator」とも呼ばれます。
 
-### Counter Chain
+### カウンターチェーン
 
-A chain that utilizes an EVM. Some examples of this are Polygon, Ethereum, and Ethereum Classic.
+EVMを利用するチェーン。この例としては、Polygon、Ethereum、EthereumClassicがあります。
 
-### Relayer
+### リレイヤー
 
-This is a type of node that submits updates to the Gravity contract on the counter chain and vice versa. It earns fees from the transactions in a batch.
+これは、カウンターチェーン上のGravityコントラクトに更新を送信するノードのタイプです。その逆も同様です。それはバッチでトランザクションから料金を稼ぎます。
 
-### Gravity Tx Pool
+### 重力Txプール
 
-Is a transaction pool that exists in the chain store of Cosmos -> Ethereum transactions waiting to be placed into a transaction batch
+トランザクションバッチに配置されるのを待っているCosmos-> Ethereumトランザクションのチェーンストアに存在するトランザクションプールです
 
-### Transaction Batch
+### トランザクションバッチ
 
-A transaction batch is a set of Ethereum transactions to be sent from the Gravity Ethereum contract at the same time. This helps reduce the costs of submitting a batch. Batches have a maximum size (currently around 100 transactions) and are only involved in the Cosmos -> Ethereum flow
+トランザクションバッチは、GravityEthereumコントラクトから同時に送信されるEthereumトランザクションのセットです。これにより、バッチを送信するコストを削減できます。バッチには最大サイズ(現在約100トランザクション)があり、Cosmos-> Ethereumフローにのみ関与します
 
-### Gravity Batch Pool
+### 重力バッチプール
 
-Is a transaction pool like structure that exists in the chains to store, separate from the `Gravity Tx Pool` it stores transactions that have been placed in batches that are in the process of being signed or being submitted by the `Orchestrator Set`
+格納するチェーンに存在するトランザクションプールのような構造であり、「Gravity Tx Pool」とは別に、「OrchestratorSet」によって署名または送信されているバッチに配置されたトランザクションを格納します。
 
-### Observed 
+### 観察された
 
-Events on Ethereum are considered `Observed` when the `Eth Signers` of 66% of the active Cosmos validator set during a given block has submitted an oracle message attesting to seeing the event.
+イーサリアムのイベントは、特定のブロック中に設定されたアクティブなCosmosバリデーターの66％の「EthSigners」がイベントの確認を証明するオラクルメッセージを送信した場合に「監視済み」と見なされます。
 
-### Validator Set Delta
+### バリデーターセットデルタ
 
-This is a term for the difference between the validator set currently in the Gravity Ethereum contract and the actual validator set on the Cosmos chain. Since the validator set may change every single block there is essentially guaranteed to be some nonzero `Validator set delta` at any given time.
+これは、現在Gravity Ethereum契約に設定されているバリデーターと、Cosmosチェーンに設定されている実際のバリデーターとの違いを表す用語です。バリデーターセットはすべてのブロックを変更する可能性があるため、常にゼロ以外の「バリデーターセットデルタ」が存在することが基本的に保証されています。
 
-### Claim
+### 請求
 
-An Ethereum event signed and submitted to cosmos by a single `Orchestrator` instance.
+単一の「オーケストレーター」インスタンスによって署名され、コスモスに送信されたイーサリアムイベント。
 
-### Attestation
+### アテステーション
 
-Aggregate of claims that eventually becomes `observed` by all orchestrators.
+最終的にすべてのオーケストレーターによって「監視」されるようになるクレームの集合体。
 
-### Voucher
+### バウチャー
 
-Represents a bridged ETH token on the Cosmos side. Their denom is has a `gravity` prefix and a hash that is build from contract address and contract token. The denom is considered unique within the system.
+コスモス側のブリッジETHトークンを表します。それらのデノムには、「重力」プレフィックスと、コントラクトアドレスとコントラクトトークンから構築されたハッシュがあります。デノムは、システム内で一意であると見なされます。
 
-### Counterpart
+＃＃＃ 片方
 
-A `Voucher` which is the locked opposing chain token in the contract
+契約でロックされた反対のチェーントークンである「バウチャー」
 
-### Logic Calls
+### ロジックコール
 
-A logic call refers to a created action for a smart contract interaction on the opposing chain. 
+ロジックコールとは、反対側のチェーンでスマートコントラクトの相互作用のために作成されたアクションを指します。

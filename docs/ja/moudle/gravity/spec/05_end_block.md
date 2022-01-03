@@ -1,34 +1,34 @@
-# End-Block
+# エンドブロック
 
-Each abci end block call, the operations to update queues and validator set
-changes are specified to execute.
+各abciエンドブロック呼び出し、キューとバリデーターセットを更新する操作
+変更は実行するように指定されています。
 
-## Slashing
+## スラッシュ
 
-Slashing groups multiple types of slashing (validator set, batch and claim slashing). We will cover how these work in the following sections.
+スラッシュは、複数のタイプのスラッシュ(バリデーターセット、バッチ、クレームスラッシュ)をグループ化します。これらがどのように機能するかについては、次のセクションで説明します。
 
-### Validator Slashing
+### バリデータースラッシュ
 
-A validator is slashed for not signing over a validatorset. The Cosmos-SDK allows active validator sets to change from block to block, for this reason we need to store multiple validator sets within a single unbonding period. This allows validators to not be slashed. 
+バリデーターは、バリデーターセットに署名しないためにスラッシュされます。 Cosmos-SDKを使用すると、アクティブなバリデーターセットをブロックごとに変更できます。このため、単一の非結合期間内に複数のバリデーターセットを保存する必要があります。これにより、バリデーターがスラッシュされないようになります。
 
-A validator will be slashed or missing a single confirmation signing.
+バリデーターはスラッシュされるか、単一の確認署名が欠落します。
 
-### Batch Slashing
+### バッチスラッシュ
 
-A validator is slashed for not signing over a batch request. A validator will be slashed for missing 
+バッチリクエストに署名しないため、バリデーターはスラッシュされます。バリデーターは欠落しているためにスラッシュされます
 
-## Attestation
+## アテステーション
 
-Iterates through all attestations currently being voted on. Once an attestation nonce one higher than the previous one, we stop searching for an attestation and call `TryAttestation`. Once an attestation at a specific nonce has enough votes all the other attestations will be skipped and the `lastObservedEventNonce` incremented.
+現在投票されているすべてのアテステーションを繰り返します。アテステーションが前のアテステーションより1つ高くなると、アテステーションの検索を停止し、「TryAttestation」を呼び出します。特定のナンスでのアテステーションに十分な票が入ると、他のすべてのアテステーションはスキップされ、 `lastObservedEventNonce`がインクリメントされます。
 
-## Cleanup
+## 掃除
 
-Cleanup loops through batches and logic calls in order to clean up the timed out transactions.
+クリーンアップは、タイムアウトしたトランザクションをクリーンアップするために、バッチとロジック呼び出しをループします。
 
-### Batches
+### バッチ
 
-When a batch of transactions are created they have a specified height of the opposing chain for when the batch becomes invalid. When this happens we must remove them from the store. At the end of every block, we loop through the store of logic calls checking the the timeout heights. 
+トランザクションのバッチが作成されると、バッチが無効になったときの反対側のチェーンの高さが指定されます。これが発生した場合は、ストアから削除する必要があります。すべてのブロックの終わりに、タイムアウトの高さをチェックするロジック呼び出しのストアをループします。
 
-### Logic Calls
+### ロジックコール
 
-When a logic call is created it consists of a timeout height. This height is used to know when the logic call becomes invalid. At the end of every block, we loop through the store of logic calls checking the the timeout heights. 
+ロジック呼び出しが作成されると、タイムアウトの高さで構成されます。この高さは、ロジック呼び出しがいつ無効になるかを知るために使用されます。すべてのブロックの終わりに、タイムアウトの高さをチェックするロジック呼び出しのストアをループします。

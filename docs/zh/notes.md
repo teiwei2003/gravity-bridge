@@ -1,123 +1,123 @@
-# Installing Gravity on a Cosmos chain
+# 在 Cosmos 链上安装 Gravity
 
-## Installing Gravity on an unstarted chain
+## 在未启动的链上安装 Gravity
 
-0. The deployed contract address is stored in the gentx's that validators generate
-   - Validators generate an Ethereum keypair and submit it as part of their gentx
-   - Validators also sign over the gentx validator state with their ethereum keypair
-1. Once Gentx signing is complete the Ethereum signatures are collected and used to submit a valset update to the already deployed Ethereum contract
-2. The chain starts, the validators all observe the Ethereum contract state and find that it matches their current validator state, proceed with updates as normal
+0. 部署的合约地址存储在验证者生成的gentx中
+   - 验证者生成一个以太坊密钥对并将其作为他们的 gentx 的一部分提交
+   - 验证者还使用他们的以太坊密钥对签署 gentx 验证者状态
+1. 一旦 Gentx 签名完成，以太坊签名将被收集并用于向已部署的以太坊合约提交 valset 更新
+2.链开始，验证者都观察以太坊合约状态，发现它匹配他们当前的验证者状态，继续正常更新
 
-## Installing Gravity on a live Cosmos chain
+## 在实时 Cosmos 链上安装 Gravity
 
-0. There is a governance resolution accepting the gravity code into the full node codebase
-   - Once gravity starts running on a validator, it generates an Ethereum keypair.
-     - We may get this from config temporarily
-   - Gravity publishes a validator's Ethereum address every single block.
-     - This is most likely just going to mean putting it in the gravity keeper, but maybe there needs to be some kind of greater tie in with the rest of the validator set information
-       - see staking/keeper/keeper.go for an example of getting individual and all validators
-   - A gravityId is chosen at this step.
-     - This may be hardcoded for now
-   - The source code hash of the gravity Ethereum contract is saved here.
-     - This may be hardcoded as well
-   - At some later step, we will need to check that all validators have their eth address in there
-1. There is a governance resolution that says "we are going to start gravity at block x"
-   - This is a parameter-changing resolution that the gravity module looks for
-1. Right after block x, the gravity module looks at the validator set at block x, and signs over it using its Ethereum keypair.
-1. Gravity puts the Ethereum signature from the last step into the consensus state. As part of consensus, the validators check that each of these signatures is valid.
-   - The Eth signatures over the Eth addresses of the validator set from the last block are now required in every block going forward.
-1. The deployer script hits a full node api, gets the Eth signatures of the valset from the latest block, and deploys the Ethereum contract.
-1. The deployer submits the address of the gravity contract that it deployed to Ethereum.
-   - We will consider the scenario that many deployers deploy many valid gravity eth contracts.
-   - The gravity module checks the Ethereum chain for each submitted address, and makes sure that the gravity contract at that address is using the correct source code, and has the correct validator set.
-1. There is a rule in the gravity module that the correct gravity eth contract address with the lowest address in the earliest block that is at least n blocks back is the "official" contract. After n blocks passes, this allows anyone wanting to use gravity to know which ethereum contract to send their money to.
+0. 有治理决议接受重力代码进入全节点代码库
+   - 一旦重力开始在验证器上运行，它就会生成一个以太坊密钥对。
+     - 我们可能会暂时从配置中得到这个
+   - Gravity 在每个区块发布一个验证者的以太坊地址。
+     - 这很可能只是意味着将它放在重力保持器中，但也许需要与验证器集的其余信息有某种更大的联系
+       - 参见 staking/keeper/keeper.go 获取个人和所有验证者的示例
+   - 在这一步选择了一个gravityId。
+     - 这现在可能是硬编码的
+   - 重力以太坊合约的源代码哈希保存在这里。
+     - 这也可能是硬编码的
+   - 在稍后的步骤中，我们将需要检查所有验证者是否在那里都有他们的 eth 地址
+1. 有一个治理决议说“我们将在区块 x 开始引力”
+   - 这是重力模块寻找的参数改变分辨率
+1. 在区块 x 之后，重力模块查看设置在区块 x 的验证器，并使用其以太坊密钥对对其进行签名。
+1. Gravity 将上一步的以太坊签名置于共识状态。作为共识的一部分，验证者检查这些签名中的每一个是否有效。
+   - 现在每个区块都需要来自最后一个区块的验证者的 Eth 地址上的 Eth 签名。
+1. 部署脚本命中全节点api，从最新区块中获取valset的Eth签名，并部署以太坊合约。
+1. 部署者提交其部署的重力合约地址到以太坊。
+   - 我们将考虑许多部署者部署许多有效的引力 eth 合约的场景。
+   - 重力模块检查每个提交地址的以太坊链，并确保该地址的重力合约使用正确的源代码，并具有正确的验证器集。
+1. 重力模块中有一个规则，即在最早的区块中地址最低的正确的重力 eth 合约地址至少是 n 个区块的“官方”合约。经过 n 个区块后，这允许任何想要使用重力的人知道将钱发送到哪个以太坊合约。
 
-# Creating messages for the Ethereum contract
+# 为以太坊合约创建消息
 
-## Valset Process
+## Valset 过程
 
-- Gravity Daemon on each val submits a "MsgSetEthAddress" with an eth address and its signature over their Cosmos address
-- This validates the signature and adds the Eth addresss to the store under the EthAddressKey prefix.
-- Somebody submits a "MsgValsetRequest".
-- The valset from the current block goes into the store under the ValsetRequestKey prefix
-  - The valset's nonce is set as the current blockheight
-  - The valset is stored using the nonce/blockheight as the key
-- When the gravity daemons see a valset in the store, they sign over it with their eth key, and submit a MsgValsetConfirm. This goes into the store, after validation.
-  - Gravity daemons sign every valset that shows up in the store automatically, since they implicitly endorse it by having participated in the consensus which put it in the store.
-  - The valset confirm is stored using the nonce as the key, like the valset request
-- Once 66% of the gravity daemons have submitted signatures for a particular valset, a relayer can submit the valset, by accessing the valset and the signatures from the store. Maybe we will make a method to do this easily.
+- 每个 val 上的 Gravity 守护进程提交一个“MsgSetEthAddress”，其中包含一个 eth 地址及其在其 Cosmos 地址上的签名
+- 这将验证签名并将 Eth 地址添加到 EthAddressKey 前缀下的存储中。
+- 有人提交了“MsgValsetRequest”。
+- 当前块的 valset 在 ValsetRequestKey 前缀下进入存储
+  - valset 的 nonce 设置为当前块高度
+  - valset 使用 nonce/blockheight 作为键存储
+- 当重力守护进程在商店中看到一个 valset 时，他们用他们的 eth 密钥签署它，并提交一个 MsgValsetConfirm。验证后进入商店。
+  - Gravity 守护进程会自动签署每个出现在商店中的 valset，因为他们通过参与将其放入商店的共识来暗中认可它。
+  - valset 确认是使用 nonce 作为键存储的，就像 valset 请求一样
+- 一旦 66% 的引力守护进程提交了特定 valset 的签名，中继器就可以通过访问 valset 和来自商店的签名来提交 valset。也许我们会制定一种方法来轻松做到这一点。
 
-## TX Batch process
+## TX 批处理
 
-- User submits Cosmos TX with requested Eth TX "EthTx"
-- This goes into everyone's stores by consensus
-<!-- - Relayer chooses a TX batch from the tx's in the store
-- Relayer submits "BatchReqTx" to Cosmos, it goes into a BatchReq store by consensus after being validated, all Eth Tx's appearing in the requested batch are removed from the mempool. -->
-- --> Gravity module sorts TXs into batches, and puts the batches into the "BatchStore", and all Eth TXs in a batch are removed from the mempool.
+- 用户提交带有请求的 Eth TX "EthTx" 的 Cosmos TX
+- 这通过共识进入每个人的商店
+<!-- - Relayer 从商店中的 tx 中选择一个 TX 批次
+- Relayer 向 Cosmos 提交“BatchReqTx”，经过验证后一致进入 BatchReq 存储，所有出现在请求批次中的 Eth Tx 从内存池中删除。 -->
+- --> Gravity 模块将 TX 分批排序，并将这些批次放入“BatchStore”中，一批中的所有 Eth TX 从内存池中移除。
 
-- Gravity Daemon on each validator sees all batches in the BatchStore, signs over the batches, sends a "BatchConfirmTx" containing all eth signatures for all the batches.
-- The BatchConfirmTx goes into a BatchConfirmStore, now the relayer can relay the batch once there's 66%
+- 每个验证器上的重力守护进程查看 BatchStore 中的所有批次，对批次进行签名，发送包含所有批次的所有 eth 签名的“BatchConfirmTx”。
+- BatchConfirmTx 进入 BatchConfirmStore，现在中继器可以在有 66% 时中继批次
 
-- Now the batch is processed by the Eth contract.
-- The Gravity Daemons on the validators observe this, and they submit a "BatchSubmittedTx". This TX goes into a Batch SubmittedStore. The cosmos state machine discards the batch permanently once it sees that over 66% of the validators have submitted a BatchSubmittedTx.
-  - If there are any older batches in the BatchConfirmStore, they are removed because they can now never be submitted. The Eth Tx's in the old batches are released back into the mempool.
+- 现在批处理由 Eth 合约处理。
+- 验证器上的重力守护进程观察到这一点，并提交“BatchSubmittedTx”。此 TX 进入 Batch SubmittedStore。一旦发现超过 66% 的验证者提交了 BatchSubmittedTx，Cosmos 状态机就会永久丢弃该批次。
+  - 如果 BatchConfirmStore 中有任何较旧的批次，它们将被删除，因为它们现在永远无法提交。旧批次中的 Eth Tx 被释放回内存池。
 
-## Deposit oracle process
+## 存入oracle进程
 
-- Gravity Daemons constantly observe the Ethereum blockchain. Specifically the Gravity Ethereum contract
-- When a deposit is observed each validator sends a DepositTX after 50 blocks have elapsed (to resolve forks)
-- When more than 66% of the validator shave signed off on a DepositTX the message handler itself calls out to the bank and generates tokens
+- 重力守护进程不断观察以太坊区块链。特别是重力以太坊合约
+- 当观察到存款时，每个验证者都会在 50 个区块过去后发送一个 DepositTX(以解决分叉问题)
+- 当超过 66% 的验证者在 DepositTX 上签名时，消息处理程序本身会调用银行并生成令牌
 
-# CosmosSDK / Tendermint considerations
+# CosmosSDK / Tendermint 注意事项
 
-## Signing
+## 签名
 
-In order to update the validator state on the Gravity Ethereum contract we need to perform probably the simplest 'off chain work' possible. Signing the current validator state with an Ethereum key and submitting that as a message
-so that a relayer may observe and ferry the signed 'ValSetUpdate' message over to Ethereum.
+为了更新 Gravity Ethereum 合约上的验证器状态，我们可能需要执行最简单的“链下工作”。使用以太坊密钥签署当前验证器状态并将其作为消息提交
+以便中继器可以观察并将签名的“ValSetUpdate”消息传送到以太坊。
 
-The concept of 'validators signing some known value' is very core to Tendermint and of course any proof of stake system. So when it's presented as a step in any Gravity process no one bats an eye. But we're not coding Gravity as a Tendermint extension, it's a CosmosSDK module.
+“验证者签署一些已知价值”的概念是 Tendermint 的核心，当然也是任何权益证明系统的核心。因此，当它作为任何 Gravity 过程中的一个步骤出现时，没有人会不屑一顾。但是我们没有将 Gravity 编码为 Tendermint 扩展，它是一个 CosmosSDK 模块。
 
-CosmosSDK modules don't have access to validator private keys or a signing context to work with. In order to get around this we perform the signing in a separate codebase that interacts with the main module. Typically this would be called a 'relayer' but since we're writing a module where the validators specifically must perform actions with their own private keys it may be better to term this as a 'validator external signer' or something along those lines.
+CosmosSDK 模块无权访问验证器私钥或要使用的签名上下文。为了解决这个问题，我们在与主模块交互的单独代码库中执行签名。通常这将被称为“中继器”，但由于我们正在编写一个模块，其中验证器必须专门使用自己的私钥执行操作，因此将其称为“验证器外部签名者”或类似的东西可能会更好。
 
-The need for an external signer doubles the number of states required to produce a working Gravity CosmosSDK module state machine. For example the ValSetUpdate message generation process requires a trigger message, this goes into a store where the external signers observe it and submit their own signatures. This 'waiting for sigs' state could be eliminated if signing the state update could be processed as part of the trigger message handler itself.
+对外部签名者的需求使生成工作 Gravity CosmosSDK 模块状态机所需的状态数量增加了一倍。例如，ValSetUpdate 消息生成过程需要一个触发消息，它进入一个存储，外部签名者观察它并提交他们自己的签名。如果可以将状态更新签名作为触发消息处理程序本身的一部分进行处理，则可以消除这种“等待 sigs”状态。
 
-This obviously isn't a show stopper, but if it's easy _and_ maintainable we should consider using ABCI to do this at the Tendermint level.
+这显然不是一个表演障碍，但如果它很容易_和_可维护，我们应该考虑使用 ABCI 在 Tendermint 级别执行此操作。
 
-## Gravity Consensus
+## 重力共识
 
-Performing our signing at the CosmosSDK level rather than the Tendermint level has other implications. Mainly it changes the nature of the slashing and halting conditions. At the Tendermint level if signing the ValSetUpdate was part of processing the message failing to do so would result in downtime for that validator on that block. On the other hand submitting a ValSetUpdate signature in a CosmosSDK module is just another message, having no consensus impact other than slashing conditions we may add. Since slashing conditions are slow this produces the following potential vulnerability.
+在 CosmosSDK 级别而不是 Tendermint 级别执行我们的签名还有其他含义。它主要改变了削减和停止条件的性质。在 Tendermint 级别，如果签署 ValSetUpdate 是处理消息的一部分，如果不这样做将导致该块上的验证器停机。另一方面，在 CosmosSDK 模块中提交 ValSetUpdate 签名只是另一个消息，除了我们可能添加的削减条件之外，没有其他共识影响。由于削减条件很慢，这会产生以下潜在的漏洞。
 
-If a validator failing to produce ValSetUpdates and the process is implemented in Tendermint they are simply racking up downtime and have no capabilities as a validator. But if the process is implemented at the CosmosSDK level they will continue to operate normally as a validator.
+如果验证器未能生成 ValSetUpdates 并且该过程是在 Tendermint 中实现的，那么他们只会增加停机时间并且没有作为验证器的能力。但如果该流程在 CosmosSDK 级别实现，它们将继续作为验证器正常运行。
 
-My intuition about vulnerabilities here is that they could only be used to halt the bridge using 1/3rd of the stake. Since that's roughly the same as halting the chain using 1/3rd of the active stake I don't think it's an issue.
-Ethereum event feed
+我对这里的漏洞的直觉是，它们只能用于使用 1/3 的股份来停止桥梁。由于这与使用 1/3 的活跃权益停止链条大致相同，因此我认为这不是问题。
+以太坊事件源
 
-- There is a governance parameter called EthBlockDelay, for example 50 blocks
-- Gravity Daemons get the current block number from their Geth, then get the events from the block EthBlockDelay lower than the current one
-- They send an EthBlockData message
-- These messages go in an EthBlockDataStore, indexed by the block number and the validator that sent them.
-- Once there is a version of the block data that matches from at least 66% of the validators, it is considered legit
-- Once a block goes over 66% (and all previous blocks are also over 66%), tokens are minted as a result of EthToCosmos transfers in that block.
-- (optional downtime slashing???) Something watches for validators that have not submitted matching block data, and triggers a downtime slashing
+- 有一个治理参数叫做 EthBlockDelay，例如 50 个区块
+- Gravity Daemons 从他们的 Geth 获取当前区块号，然后从低于当前区块的 EthBlockDelay 获取事件
+- 他们发送一个 EthBlockData 消息
+- 这些消息进入一个 EthBlockDataStore，由块号和发送它们的验证器索引。
+- 一旦有一个版本的区块数据与至少 66% 的验证者匹配，它就被认为是合法的
+- 一旦一个区块超过 66%(并且所有之前的区块也超过 66%)，由于 EthToCosmos 在该区块中的转移，令牌被铸造。
+-(可选的停机时间削减？？？)有些东西会监视没有提交匹配块数据的验证器，并触发停机时间削减
 
-Alternate experimental ethereum input
+替代实验以太坊输入
 
-- Let's say that accounts have to send a ClaimTokens message to get their tokens that have been transferred over from Eth (just for sake of argument)
-<!-- - Each validator connects directly to Geth (instead of the gravity daemon handling it) -->
-- When a ClaimTokens message comes in, each validator in the state machine, checks it's own eth block DB (this is seperate from the Cosmos KV stores, and is access only by the gravity module. The gravity daemon fills it up with block data from a different process) to see if the tokens have been transferred to that account.
-- Validators with a different opinion on the state of Eth will arrive at different conclusions, and produce different blocks. Validators that disagree will have downtime, according to Tendermint. This allows Tendermint to handle all consensus, and we don't think about it.
+- 假设账户必须发送一个 ClaimTokens 消息来获取他们已经从 Eth 转移过来的代币(只是为了争论)
+<!-- - 每个验证器直接连接到 Geth(而不是重力守护进程处理它)-->
+- 当一个 ClaimTokens 消息进来时，状态机中的每个验证器，检查它自己的 eth 块数据库(这与 Cosmos KV 存储分开，并且只能由重力模块访问。重力守护进程用来自的块数据填充它一个不同的过程)以查看令牌是否已转移到该帐户。
+- 对 Eth 状态持有不同意见的验证者会得出不同的结论，并产生不同的区块。根据 Tendermint 的说法，不同意的验证者将有停机时间。这允许 Tendermint 处理所有共识，我们不考虑它。
 
-Ethereum to Cosmos transfers
+以太坊到 Cosmos 的转账
 
-- Function in contract takes a destination Cosmos address and transfer amount
-- Does the transfer and logs a EthToCosmosTransfer event with the amount and destination
+- 合约中的函数采用目标 Cosmos 地址和转账金额
+- 是否转移并记录带有金额和目的地的 EthToCosmosTransfer 事件
 
-Alternate batch assembly by validators
+验证器的交替批处理组装
 
-- Allowing anyone to request batches as we have envisioned previously opens up an attack vector where someone assembles unprofitable batches to stop the bridge.
-- Instead, why not just have the validators assemble batches?
-- In the cosmos state machine, they look at all transactions, sort them from lowest to highest fee, and chop that list into batches.
-- Now relayers can try to submit the batches.
-- Batches are submitted to Eth, and transactions build up in the pool, in parallel.
-- At some point the validators make new batches sorted in the same way.
-- Relayers may choose to submit new batches which invalidate older low fee batches.
+- 允许任何人像我们之前设想的那样请求批次打开了一个攻击向量，有人组装无利可图的批次来停止桥接。
+- 相反，为什么不让验证器组装批次？
+- 在 Cosmos 状态机中，他们查看所有交易，将它们从最低到最高费用排序，然后将该列表分成批次。
+- 现在中继者可以尝试提交批次。
+- 批量提交给 Eth，交易在池中并行建立。
+- 在某些时候，验证器以相同的方式对新批次进行排序。
+- 中继者可以选择提交使旧的低费用批次无效的新批次。

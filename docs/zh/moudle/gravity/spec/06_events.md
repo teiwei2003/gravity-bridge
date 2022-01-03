@@ -1,6 +1,6 @@
-# Events
+# 事件
 
-The gravity module emits the following events:
+重力模块发出以下事件:
 
 ## EndBlocker
 

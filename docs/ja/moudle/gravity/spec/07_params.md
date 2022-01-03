@@ -1,6 +1,6 @@
-# Parameters
+# イベント
 
-The gravity module contains the following parameters:
+重力モジュールは、次のイベントを発行します。
 
 | Key                           | Type         | Example        |
 |-------------------------------|--------------|----------------|

@@ -1,160 +1,160 @@
-# Messages
+# 消息
 
-In this section we describe the processing of the gravity messages and the corresponding updates to the state. All created/modified state objects specified by each message are defined within the [state](./02_state_transitions.md) section.
+在本节中，我们将描述重力消息的处理以及对状态的相应更新。每个消息指定的所有创建/修改状态对象都在 [state](./02_state_transitions.md) 部分中定义。
 
 ### MsgDelegateKeys
 
-Allows validators to delegate their voting responsibilities to a given key. This Key can be used to authenticate oracle claims. 
+允许验证者将他们的投票职责委托给给定的密钥。此密钥可用于验证 oracle 声明。
 
 +++ https://github.com/althea-net/cosmos-gravity-bridge/blob/main/module/proto/gravity/v1/msgs.proto#L38-L40
 
 +++ https://github.com/althea-net/cosmos-gravity-bridge/blob/main/module/proto/gravity/v1/msgs.proto#L56-60
 
-This message is expected to fail if: 
+如果出现以下情况，此消息预计会失败:
 
-- The validator address is incorrect. 
-  - The address is empty (`""`)
-  - Not a length of 20
-  - Bech32 decoding fails
-- The orchestrator address is incorrect.
-  - The address is empty (`""`)
-  - Not a length of 20
-  - Bech32 decoding fails
-- The ethereum address is incorrect.
-  - The address is empty (`""`)
-  - Not a length of 42
-  - Does not start with 0x
-- The validator is not present in the validator set.
+- 验证器地址不正确。
+  - 地址为空 (`""`)
+  - 不是 20 的长度
+  - Bech32 解码失败
+- 编排器地址不正确。
+  - 地址为空 (`""`)
+  - 不是 20 的长度
+  - Bech32 解码失败
+- 以太坊地址不正确。
+  - 地址为空 (`""`)
+  - 不是 42 的长度
+  - 不以 0x 开头
+- 验证器不存在于验证器集中。
 
 ### MsgSubmitEthereumTxConfirmation
 
-When the gravity daemon witnesses a complete validator set within the gravity module, the validator submits a signature of a message containing the entire validator set. 
+当重力守护进程见证重力模块内的完整验证器集时，验证器提交包含整个验证器集的消息的签名。
 
 +++ https://github.com/althea-net/cosmos-gravity-bridge/blob/main/module/proto/gravity/v1/msgs.proto#L79-84
 
-This message is expected to fail if:
+如果出现以下情况，此消息预计会失败:
 
-- If the validator set is not present.
-- The signature is encoded incorrectly.
-- Signature verification of the ethereum key fails.
-- If the signature submitted has already been submitted previously.
-- The validator address is incorrect. 
-  - The address is empty (`""`)
-  - Not a length of 20
-  - Bech32 decoding fails
+- 如果验证器集不存在。
+- 签名编码不正确。
+- 以太坊密钥的签名验证失败。
+- 如果提交的签名之前已经提交过。
+- 验证器地址不正确。
+  - 地址为空 (`""`)
+  - 不是 20 的长度
+  - Bech32 解码失败
 
 
 ### MsgSendToEthereum
 
-When a user wants to bridge an asset to an EVM. If the token has originated from the cosmos chain it will be held in a module account. If the token is originally from ethereum it will be burned on the cosmos side.
+当用户想要将资产桥接到 EVM 时。如果代币源自 Cosmos 链，它将被保存在一个模块帐户中。如果令牌最初来自以太坊，它将在 Cosmos 一侧被烧毁。
 
-> Note: this message will later be removed when it is included in a batch.
+> 注意:此消息稍后将在包含在批处理中时被删除。
 
 
 +++ https://github.com/althea-net/cosmos-gravity-bridge/blob/main/module/proto/gravity/v1/msgs.proto#L100-109
 
-This message will fail if:
+如果出现以下情况，此消息将失败:
 
-- The sender address is incorrect.
-  - The address is empty (`""`)
-  - Not a length of 20
-  - Bech32 decoding fails
-- The denom is not supported.
-- If the token is cosmos originated
-  - The sending of the token to the module account fails
-- If the token is non-cosmos-originated.
-  - If sending to the module account fails
-  - If burning of the token fails
+- 发件人地址不正确。
+  - 地址为空 (`""`)
+  - 不是 20 的长度
+  - Bech32 解码失败
+- 不支持denom。
+- 如果令牌是宇宙起源的
+  - 向模块账户发送令牌失败
+- 如果令牌是非宇宙起源的。
+  - 如果发送到模块帐户失败
+  - 如果令牌燃烧失败
 
 ### MsgRequestBatchTx
 
-When enough transactions have been added into a batch, a user or validator can call send this message in order to send a batch of transactions across the bridge. 
+当一个批次中添加了足够多的交易时，用户或验证者可以调用发送此消息，以便通过桥发送一批交易。
 
 +++ https://github.com/althea-net/cosmos-gravity-bridge/blob/main/module/proto/gravity/v1/msgs.proto#L122-125
 
-This message will fail if:
+如果出现以下情况，此消息将失败:
 
-- The denom is not supported.
-- Failure to build a batch of transactions.
-- If the orchestrator address is not present in the validator set
+- 不支持denom。
+- 无法建立一批交易。
+- 如果协调器地址不存在于验证器集中
 
 ### MsgConfirmBatch
 
-When a `MsgRequestBatchTx` is observed, validators need to sign batch request to signify this is not a maliciously created batch and to avoid getting slashed. 
+当观察到一个 `MsgRequestBatchTx` 时，验证者需要对批处理请求进行签名，以表明这不是恶意创建的批处理并避免被削减。
 
 +++ https://github.com/althea-net/cosmos-gravity-bridge/blob/main/module/proto/gravity/v1/msgs.proto#L137-143
 
-This message will fail if:
+如果出现以下情况，此消息将失败:
 
-- The batch does not exist
-- If checkpoint generation fails
-- If a none validator address or delegated address 
-- If the counter chain address is empty or incorrect.
-- If counter chain address fails signature validation
-- If the signature was already presented in a previous message
+- 该批次不存在
+- 如果检查点生成失败
+- 如果没有验证人地址或委托地址
+- 如果计数器链地址为空或不正确。
+- 如果计数器链地址未通过签名验证
+- 如果签名已经出现在之前的消息中
 
 ### MsgConfirmLogicCall
 
-When a logic call request has been made, it needs to be confirmed by the bridge validators. Each validator has to submit a confirmation of the logic call being executed.
+当发出逻辑调用请求时，需要桥验证器确认。每个验证器都必须提交对正在执行的逻辑调用的确认。
 
 +++ https://github.com/althea-net/cosmos-gravity-bridge/blob/main/module/proto/gravity/v1/msgs.proto#L155-161
 
-This message will fail if:
+如果出现以下情况，此消息将失败:
 
-- The id encoding is incorrect
-- The outgoing logic call which is confirmed can not be found
-- Invalid checkpoint generation
-- Signature decoding failed
-- The address calling this function is not a validator or its delegated key
-- The counter chain address is incorrect or empty
-- Counter party signature verification failed
-- A duplicate signature is observed
+- id 编码不正确
+- 无法找到已确认的呼出逻辑调用
+- 无效的检查点生成
+- 签名解码失败
+- 调用此函数的地址不是验证器或其委托的密钥
+- 计数器链地址不正确或为空
+- 交易对手签名验证失败
+- 观察到重复签名
 
 ### MsgDepositClaim
 
-When a message to deposit funds into the gravity contract is created a event will be omitted and observed a message will be submitted confirming the deposit.
+当创建将资金存入重力合约的消息时，将省略一个事件，并观察到将提交一条确认存款的消息。
 
 +++ https://github.com/althea-net/cosmos-gravity-bridge/blob/main/module/proto/gravity/v1/msgs.proto#L170-181
 
-This message will fail if:
+如果出现以下情况，此消息将失败:
 
-- The validator is unknown
-- The validator is not in the active set
-- If the creation of attestation fails
+- 验证者未知
+- 验证器不在活动集中
+- 如果创建证明失败
 
 ### MsgWithdrawClaim
 
-When a user requests a withdrawal from the gravity contract a event will omitted by the counter party chain. This event will be observed by a bridge validator and submitted to the gravity module.
+当用户请求退出重力合约时，交易对手链将忽略一个事件。此事件将由桥接验证器观察并提交给重力模块。
 
 
 +++ https://github.com/althea-net/cosmos-gravity-bridge/blob/main/module/proto/gravity/v1/msgs.proto#L187-193
 
-This message will fail if:
+如果出现以下情况，此消息将失败:
 
-- The validator is unknown
-- The validator is not in the active set
-- If the creation of attestation fails
+- 验证者未知
+- 验证器不在活动集中
+- 如果创建证明失败
 
 ### MsgERC20DeployedClaim
 
-This message allows the cosmos chain to learn information about the denom from the counter party chain.
+该消息允许 Cosmos 链从对方链中了解有关 denom 的信息。
 
 +++ https://github.com/althea-net/cosmos-gravity-bridge/blob/main/module/proto/gravity/v1/msgs.proto#L200-209
 
-This message will fail if:
+如果出现以下情况，此消息将失败:
 
-- The validator is unknown
-- The validator is not in the active set
-- If the creation of attestation fails
+- 验证者未知
+- 验证器不在活动集中
+- 如果创建证明失败
 
 ### MsgLogicCallExecutedClaim
 
-This informs the chain that a logic call has been executed. This message is submitted by bridge validators when they observe a event containing details around the logic call. 
+这会通知链已执行逻辑调用。当桥验证器观察到包含有关逻辑调用的详细信息的事件时，此消息由桥验证器提交。
 
 +++ https://github.com/althea-net/cosmos-gravity-bridge/blob/main/module/proto/gravity/v1/msgs.proto#L215-221
 
-This message will fail if: 
+如果出现以下情况，此消息将失败:
 
-- The validator submitting the claim is unknown
-- The validator is not in the active set
-- Creation of attestation has failed.
+- 提交索赔的验证者未知
+- 验证器不在活动集中
+- 创建证明失败。

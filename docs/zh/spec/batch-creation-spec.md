@@ -1,61 +1,61 @@
-## Transaction batch creation
+## 交易批量创建
 
-Deposits (Ethereum > Cosmos transfers) happen as single operations. Each deposit creates a single oracle event that is voted on see [the deposit spce](deposit-spec.md). Withdraws are more complicated, since Ethereum gas is very expensive we want to spread out the cost of verifying the validator signatures across as many transactions as possible. Hence batches.
+存款(以太坊> Cosmos 转账)作为单一操作发生。每个存款创建一个单一的预言机事件，该事件被投票见 [存款 spce](deposit-spec.md)。提款更加复杂，因为以太坊的 gas 非常昂贵，我们希望在尽可能多的交易中分摊验证验证者签名的成本。因此分批。
 
-When a user calls MsgSendToEth they lock up some tokens and some fee value into the 'Gravity tx pool' which is a pool of transactions waiting to enter batches.
+当用户调用 MsgSendToEth 时，他们会将一些代币和一些费用值锁定到“重力交易池”中，这是一个等待进入批次的交易池。
 
-Transaction batches contain only a single uniform ERC20 token token type for all transactions and fees.
+交易批次仅包含所有交易和费用的单一统一 ERC20 代币类型。
 
-Relayers observe the pool and query for what fees they might be paid for a batch of a given ERC20 contract. Relayers (or anyone) may request a batch be created for a specific token type. Once that is done the validators sign off on this batch via their orchestrators.
+中继者观察池并查询他们可能为一批给定的 ERC20 合约支付的费用。中继器(或任何人)可以请求为特定的令牌类型创建一个批次。完成后，验证器将通过其编排器签署该批次。
 
-Batch creation may fail if there are no transactions of that token type in the pool or if the new batch would not have a higher total fee amount than an existing batch that is waiting to execute.
+如果池中没有该代币类型的交易，或者新批次的总费用不会高于等待执行的现有批次，则批次创建可能会失败。
 
-At this point any relayer (the one that requested the batch or otherwise) may bundle those signatures and submit the result to Ethereum. Paying the gas fees in return for all of the fees for all the transactions in that batch.
+此时，任何中继器(请求批处理的中继器或其他中继器)都可以捆绑这些签名并将结果提交给以太坊。支付gas费用以换取该批次中所有交易的所有费用。
 
-While relayers request batches they are created by the Gravity Cosmos module itself, with the highest fee transactions in the pool for that particular token type going first. Up to a current max of 100 transactions per batch.
+当中继器请求批处理时，它们是由 Gravity Cosmos 模块本身创建的，池中该特定令牌类型的最高费用交易首先进行。目前每批最多 100 笔交易。
 
-While transactions are in the pool it is possible for the user to request a refund and get their tokens back by sending a MsgCancelSendToEth but this is no longer possible once a transaction is in a batch. As it may be possible for that batch to execute on Ethereum as soon as signatures start coming in.
+当交易在池中时，用户可以通过发送 MsgCancelSendToEth 来请求退款并取回他们的代币，但是一旦交易成批处理，这将不再可能。因为一旦签名开始进入，该批次就有可能在以太坊上执行。
 
-Once a MsgSendToEth transaction is out of the pool and in a batch one of three things must happen to the funds.
+一旦 MsgSendToEth 交易从池中出来，并且在批处理中，资金必须发生以下三件事之一。
 
-1. The batch executes on Ethereum, the transfer is complete, locked tokens are burned on Cosmos
-2. The batch times out, once it's timeout height in blocks is reached, the locked tokens are then returned to the pool
-3. A later batch is executed, invalidating this one and making it impossible to submit. The locked tokens are then returned to the pool
+1.批量在以太坊上执行，转账完成，锁定代币在Cosmos上烧毁
+2. 批量超时，一旦达到块的超时高度，锁定的代币将返回到池中
+3. 执行后一批，使这批无效，无法提交。锁定的代币然后返回到池中
 
-## Creation of more profitable batches
+## 创造更有利可图的批次
 
-With the general flow of batches resolved we should focus in on the largest problem of batch creation. Ensuring that permissionless requests always result in a batch that may be relayed. Even given a large amount of low fee spam and hostile batch requestors.
+随着批处理的一般流程解决，我们应该关注批处理创建的最大问题。确保未经许可的请求总是导致可以中继的批次。即使有大量的低费用垃圾邮件和恶意批处理请求者。
 
-Suppose we have an infinite stream of low fee spam transactions going
-into the Gravity tx pool. Any given batch creation event will then lock
-up high fee 'good transactions' with dozens of spam transactions.
+假设我们有无限流的低费用垃圾邮件交易
+进入重力交易池。然后将锁定任何给定的批处理创建事件
+通过数十次垃圾邮件交易提高高费用“良好交易”。
 
-In this case no relayer will ever chose to relay a batch because all of
-them will be unprofitable.
+在这种情况下，没有中继者会选择中继一批，因为所有的
+他们将无利可图。
 
-In order to ensure that profitable batches are eventually created we
-must avoid locking up the high fee 'good transactions' into obviously
-bad batches. To add to the difficulty we don't actually know what any
-token in this process is worth or what ETH gas costs.
+为了确保最终创建有利可图的批次，我们
+必须避免将高费用的“好交易”锁定在明显的
+坏批次。为了增加难度，我们实际上不知道有什么
+在这个过程中的代币价值或 ETH gas 成本。
 
-The solution this patch provides is to ensure that a new batch always
-has higher fees than the last batch. This means that even if there are
-infinite spam transactions, and infinite spamming of the permission less
-create batch request batch creation will halt long enough for enough
-good transactions to build up in the pool and a new more profitable
-batch to be created.
+此补丁提供的解决方案是确保新批次始终
+费用比上一批高。这意味着即使有
+无限垃圾邮件交易，以及无限垃圾邮件的权限更少
+创建批处理请求批处理创建将停止足够长的时间
+在池中建立良好的交易和新的更有利可图的交易
+要创建的批处理。
 
-Over a long enough timescale the old batches either time out. Returning
-profitable transactions to the pool to create a new even better batch. Or
-the profitability of the latest batch continues to increase until one is
-relayed, also freeing the previous good transactions to go into the next
-batch.
+在足够长的时间范围内，旧批次要么超时。返回
+有利可图的交易到池中，以创建一个新的更好的批次。或者
+最新一批的盈利能力继续增加，直到一个
+转发，也释放了之前的良好交易进入下一个
+批。
 
-So given this condition we can say that no matter the inputs a
-successful batch will eventually be created.
+因此，鉴于这种情况，我们可以说无论输入如何
+最终将创建成功的批处理。
 
-## Notes on relaying preferences
+## 关于中继偏好的注意事项
 
-Remember the relayers can freely observe prices on Ethereum and know what the exchange rate for a given token is. They may also have different preferences for which token they are paid in, for example if you already have DAI liquidating that DAI to ETH to pay for more batches is cheaper per DAI. A $200 DAI reward is only worth $150 if it costs you $50 to exchange it for ETH on uniswap. But if you already have $1k in DAI that $50 doesn't seem so bad.
+请记住，中继者可以自由观察以太坊上的价格，并知道给定代币的汇率是多少。他们也可能对支付的代币有不同的偏好，例如，如果您已经让 DAI 将该 DAI 清算为 ETH 以支付更多批次的费用，则每个 DAI 会更便宜。如果在 uniswap 上花费 50 美元将其兑换为 ETH，则 200 美元的 DAI 奖励仅价值 150 美元。但是，如果您已经拥有 1000 美元的 DAI，那么 50 美元似乎还不错。
 
-This is why batch requests must be permissionless and open. Not only are the prices for any given token unknowable by the Cosmos chain itself without a very complicated token price oracle but the relayers preference is totally subjective.
+这就是为什么批处理请求必须是无需许可和开放的。在没有非常复杂的代币价格预言机的情况下，Cosmos 链本身不仅无法知道任何给定代币的价格，而且中继者的偏好是完全主观的。

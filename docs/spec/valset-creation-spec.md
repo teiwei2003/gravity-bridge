@@ -1,4 +1,4 @@
-## Validator set creation
+# Validator set creation
 
 In Gravity when we talk about a `valset` we mean a `validator set update` which is a series of ethereum addresses with attached normalized powers used to represent the Cosmos validator set in the Gravity Ethereum contract. Since the Cosmos validator set can and will change frequently. 
 

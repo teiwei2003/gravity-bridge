@@ -1,19 +1,19 @@
-# Arbitrary logic functionality
+# 任意のロジック機能
 
-Gravity includes the functionality to make arbitrary calls out to other Ethereum contracts. This can be used to allow the Cosmos chain to take actions on Ethereum. This functionality is very general. It can even be used to implement the core token transferring functionality of the bridge. However, there is one important caveat: these arbitrary logic contracts can transact with ERC20 tokens, but not any other kind of asset, such as ERC721. Interacting with non-ERC20 assets would require modifications to the core Gravity contract.
+Gravityには、他のイーサリアムコントラクトを任意に呼び出す機能が含まれています。これは、コスモスチェーンがイーサリアムに対してアクションを実行できるようにするために使用できます。この機能は非常に一般的です。ブリッジのコアトークン転送機能を実装するために使用することもできます。ただし、重要な注意点が1つあります。これらの任意のロジックコントラクトはERC20トークンとトランザクションできますが、ERC721などの他の種類のアセットとはトランザクションできません。 ERC20以外のアセットとやり取りするには、コアGravityコントラクトを変更する必要があります。
 
-# Architecture
+# Build
 
 `SetOutgoingLogicCall`
 
-Gravity offers a method which can be called by other modules to create an outgoing logic call. To use this method, a calling module must first assemble a logic call (more on this later). This is then submitted to the Gravity module with `SetOutgoingLogicCall`. From here, it is signed by the validators. Once it has enough signatures, a Gravity relayer will pick it up and submit it to the Gravity contract on Ethereum.
+Gravityは、他のモジュールから呼び出して発信ロジック呼び出しを作成できるメソッドを提供します。このメソッドを使用するには、呼び出し元のモジュールが最初にロジック呼び出しをアセンブルする必要があります(これについては後で詳しく説明します)。次に、これは `SetOutgoingLogicCall`を使用してGravityモジュールに送信されます。ここから、バリデーターによって署名されます。十分な署名があれば、Gravityリレーがそれを受け取り、EthereumのGravity契約に送信します。
 
 `OutgoingLogicCall`
 
-`SetOutgoingLogicCall` takes an `OutgoingLogicCall` as an argument. Here is an explanation of its parameters:
+`SetOutgoingLogicCall`は、引数として` OutgoingLogicCall`を取ります。そのパラメータの説明は次のとおりです。
 
 ```golang
-// OutgoingLogicCall represents an individual logic call from Gravity to ETH
+//OutgoingLogicCall represents an individual logic call from Gravity to ETH
 type OutgoingLogicCall struct {
 	Transfers            []*ERC20Token `protobuf:"bytes,1,rep,name=transfers,proto3" json:"transfers,omitempty"`
 	Fees                 []*ERC20Token `protobuf:"bytes,2,rep,name=fees,proto3" json:"fees,omitempty"`
@@ -25,27 +25,27 @@ type OutgoingLogicCall struct {
 }
 ```
 
-- Transfers: These are tokens that are sent to the logic contract before it is executed. The contract can then take actions using the tokens. For example, Gravity could send the logic contract some Uniswap LP tokens that it would then use to redeem liquidity from Uniswap.
-- Fees: These are tokens that will be paid by the core Gravity.sol contract to the Gravity relayer for executing the logic call. Fees are paid after the logic contract executes, so it is possible to pay the relayer with tokens that logic contract receives after executing, and then sends back to the core Gravity contract.
-- LogicContractAddress: This is the address of the logic contract that the core Gravity contract calls to execute the arbitrary logic. NOTE: this could be the actual logic contract, or it could be a batching contract that calls the logic contract a number of times. Examples of this in the `/solidity/test` folder.
-- Payload: This is the Ethereum abi encoded function call that will be executed on the logic contract. If you are using a batching middleware contract, then this abi encoded function call will itself contain an array of abi encoded function calls on the actual logic contract.
-- Timeout: The logic call will not execute if the block timestamp on Ethereum is higher than the value of this timeout. 
-- InvalidationScope and InvalidationNonce: More on these below:
+-転送:これらは、実行される前にロジックコントラクトに送信されるトークンです。その後、コントラクトはトークンを使用してアクションを実行できます。たとえば、Gravityは、ロジックコントラクトにいくつかのUniswap LPトークンを送信し、それを使用してUniswapから流動性を引き換えることができます。
+-料金:これらは、ロジック呼び出しを実行するために、コアGravity.solコントラクトによってGravityリレーに支払われるトークンです。料金はロジックコントラクトの実行後に支払われるため、ロジックコントラクトが実行後に受け取ったトークンを中継者に支払い、コアグラビティコントラクトに送り返すことができます。
+--LogicContractAddress:これは、コアGravityコントラクトが任意のロジックを実行するために呼び出すロジックコントラクトのアドレスです。注:これは実際のロジックコントラクトである場合もあれば、ロジックコントラクトを何度も呼び出すバッチコントラクトである場合もあります。 `/solidity/test`フォルダーにあるこの例。
+-ペイロード:これは、ロジックコントラクトで実行されるEthereumabiでエンコードされた関数呼び出しです。バッチミドルウェアコントラクトを使用している場合、このabiエンコードされた関数呼び出し自体に、実際のロジックコントラクトでのabiエンコードされた関数呼び出しの配列が含まれます。
+-タイムアウト:イーサリアムのブロックタイムスタンプがこのタイムアウトの値よりも高い場合、ロジックコールは実行されません。
+--InvalidationScopeおよびInvalidationNonce:以下の詳細:
 
 
-## Invalidation
+## 無効化
 
-`invalidation_id` and `invalidation_nonce` are used as replay protection in the Gravity arbitrary logic call functionality.
+`invalidation_id`と` invalidation_nonce`は、Gravityの任意のロジック呼び出し機能でリプレイ保護として使用されます。
 
-When a submitLogicCall transaction is submitted to the Ethereum contract, the contract checks uses `invalidation_id` to access a key in the invalidation mapping. The value at this key is checked against the supplied `invalidation_nonce`. The logic call is only allowed to go through if the supplied `invalidation_nonce` is higher.
+submitLogicCallトランザクションがEthereumコントラクトに送信されると、コントラクトチェックは `invalidation_id`を使用して無効化マッピングのキーにアクセスします。このキーの値は、指定された `invalidation_nonce`に対してチェックされます。ロジックコールは、指定された `invalidation_nonce`の方が高い場合にのみ通過できます。
 
-This can be used to implement many different invalidation schemes:
+これは、さまざまな無効化スキームを実装するために使用できます。
 
-### Easiest: timeout-only invalidation
-If you don't know what this all means, when you send a logic call to the Gravity module from the Cosmos side, just set the `invalidation_id` to an incrementing integer that you keep track of in your module. Set the `invalidation_nonce` to zero each time. This will create a new entry in the invalidation mapping on Ethereum for each logic batch, providing replay protection, while allowing batches to be completely independent.
+### 最も簡単:タイムアウトのみの無効化
+これが何を意味するのかわからない場合は、Cosmos側からGravityモジュールにロジック呼び出しを送信するときに、モジュールで追跡する増分整数に `invalidation_id`を設定するだけです。毎回 `invalidation_nonce`をゼロに設定します。これにより、ロジックバッチごとにイーサリアムの無効化マッピングに新しいエントリが作成され、リプレイ保護が提供されると同時に、バッチを完全に独立させることができます。
 
-### Sequential invalidation
-If you don't want it to be possible to submit an early logic call after a later logic call, you can instead set the `invalidation_id` to zero each time, and use an incrementing integer for the `invalidation_nonce`. This makes it so that any logic call that is successfully submitted will invalidate all previous logic calls.
+### 順次無効化
+後のロジック呼び出しの後に初期のロジック呼び出しを送信できないようにする場合は、代わりに、毎回 `invalidation_id`をゼロに設定し、` invalidation_nonce`に増分整数を使用できます。これにより、正常に送信されたロジック呼び出しは、以前のすべてのロジック呼び出しを無効にします。
 
-### For example: Token based invalidation
-In Gravity's core submitBatch functionality, we have batches of transactions for a given token invalidate earlier batches of that token, but not earlier batches of other tokens. To implement this on top of the submitLogicCall method, we would set the `invalidation_id` to the token address and keep an incrementing nonce for each token.
+### 例:トークンベースの無効化
+GravityのコアsubmitBatch機能では、特定のトークンのトランザクションのバッチがそのトークンの以前のバッチを無効にしますが、他のトークンの以前のバッチは無効にしません。これをsubmitLogicCallメソッドの上に実装するには、 `invalidation_id`をトークンアドレスに設定し、トークンごとに増分ナンスを維持します。

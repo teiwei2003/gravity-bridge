@@ -1,125 +1,125 @@
-# Design Overview
+# デザインの概要
 
-This will walk through all the details of the technical design. [`notes.md`](../notes.md) is probably a better reference
-to get an overview. We will attempt to describe the entire technical design here and break out separate documents
-for the details message formats, etc.
+これにより、技術設計のすべての詳細が説明されます。 [`notes.md`](../notes.md)はおそらくより良いリファレンスです
+概要を取得します。 ここで技術設計全体を説明し、個別のドキュメントを作成します。
+詳細なメッセージフォーマットなど
 
-## Workflow
+## ワークフロー
 
-The high-level workflow is:
+高レベルのワークフローは次のとおりです。
 
-Activation Steps:
+アクティベーション手順:
 
-- Bootstrap Cosmos SDK chain
-- Install Ethereum contract
+-ブートストラップCosmosSDKチェーン
+-イーサリアム契約をインストールします
 
-Token Transfer Steps:
+トークン転送の手順:
 
-- Transfer original ERC20 tokens from ETH to Cosmos
-- Transfer pegged tokens from Cosmos to ETH
-- Update Cosmos Validator set on ETH
+-元のERC20トークンをETHからCosmosに転送します
+-ペグされたトークンをCosmosからETHに転送します
+-ETHに設定されているCosmosValidatorを更新します
 
-The first two steps are done once, the other 3 repeated many times.
+最初の2つのステップは1回実行され、他の3つのステップは何度も繰り返されます。
 
-## Definitions
+## 定義
 
-Words matter and we seek clarity in the terminology, so we can have clarity in our thinking and communication.
-Key concepts that we mention below will be defined here:
+言葉は重要であり、用語の明確さを求めているため、思考とコミュニケーションを明確にすることができます。
+以下で説明する重要な概念は、ここで定義されます。
 
-- `Operator` - This is a person (or people) who control a Cosmos SDK validator node. This is also called `valoper` or "Validator Operator" in the Cosmos SDK staking section
-- `Full Node` - This is an _Ethereum_ Full Node run by an Operator
-- `Validator` - This is a Cosmos SDK Validating Node (signing blocks)
-- `Eth Signer` (name WIP) - This is a separate binary controlled by an Operator that holds Ethereum private keys used for signing transactions used to move tokens between the two chains.
-- `Oracle` (name WIP) - This is a separate binary controlled by an Operator that holds Cosmos SDK private keys used for bringing data from the Ethereum chain over to the Cosmos chain by submitting `Claims`, these claims aggregate into an `Attestation`
-- `Orchestrator` - a single binary that combines the `Eth Signer`, `Oracle`, and `Relayer` for ease of use by the `Operator`
-- `Relayer` - This is a type of node that submits updates to the Gravity contract on Ethereum. It earns fees from the transactions in a batch.
-- `REST server` - This is the Cosmos SDK "REST Server" that runs on Port 1317, either on the validator node or another Cosmos SDK node controlled by the Operator
-- `Ethereum RPC` - This is the JSON-RPC server for the Ethereum Full Node.
-- `Validator Set` - The set of validators on the Cosmos SDK chain, along with their respective voting power. These are ed25519 public keys used to sign tendermint blocks.
-- `Gravity Tx pool` - Is a transaction pool that exists in the chain store of Cosmos -> Ethereum transactions waiting to be placed into a transaction batch
-- `Transaction batch` - A transaction batch is a set of Ethereum transactions to be sent from the Gravity Ethereum contract at the same time. This helps reduce the costs of submitting a batch. Batches have a maximum size (currently around 100 transactions) and are only involved in the Cosmos -> Ethereum flow
-- `Gravity Batch pool` - Is a transaction pool like structure that exists in the chains to store, separate from the `Gravity Tx pool` it stores transactions that have been placed in batches that are in the process of being signed or being submitted by the `Orchestrator Set`
-- `EthBlockDelay` - Is a agreed upon number of Ethereum blocks all oracle attestations are delayed by. No `Orchestrator` will attest to have seen an event occur on Ethereum until this number of blocks has elapsed as denoted by their trusted Ethereum full node. This should prevent short forks form causing disagreements on the Cosmos side. The current value being considered is 50 blocks.
-- `Observed` - events on Ethereum are considered `Observed` when the `Eth Signers` of 66% of the active Cosmos validator set during a given block has submitted an oracle message attesting to seeing the event.
-- `Validator set delta` - This is a term for the difference between the validator set currently in the Gravity Ethereum contract and the actual validator set on the Cosmos chain. Since the validator set may change every single block there is essentially guaranteed to be some nonzero `Validator set delta` at any given time.
-- `Allowed validator set delta` - This is the maximum allowed `Validator set delta` this parameter is used to determine if the Gravity contract in MsgProposeGravityContract has a validator set 'close enough' to accept. It is also used to determine when validator set updates need to be sent. This is decided by a governance vote _before_ MsgProposeGravityContract can be sent.
-- `Gravity ID` - This is a random 32 byte value required to be included in all Gravity signatures for a particular contract instance. It is passed into the contract constructor on Ethereum and used to prevent signature reuse when contracts may share a validator set or subsets of a validator set. This is also set by a governance vote _before_ MsgProposeGravityContract can be sent.
-- `Gravity contract code hash` - This is the code hash of a known good version of the Gravity contract solidity code. It will be used to verify exactly which version of the bridge will be deployed.
-- `Start Threshold` - This is the percentage of total voting power that must be online and participating in Gravity operations before a bridge can start operating.
-- `Claim` (name WIP) - an Ethereum event signed and submitted to cosmos by a single `Orchestrator` instance
-- `Attestation` (name WIP) - aggregate of claims that eventually becomes `observed` by all orchestrators
-- `Voucher` - represent a bridged ETH token on the Cosmos side. Their denom is has a `gravity` prefix and a hash that is build from contract address and contract token. The denom is considered unique within the system.
-- `Counterpart` - to a `Voucher` is the locked ETH token in the contract
-- `Delegate keys` - when an `Operator` sets up the `Eth Signer` and `Oracle` they assign `Delegate Keys` by sending a message containing these keys using their `Validator` address. There is one delegate Ethereum key, used for signing messages on Ethereum and representing this `Validator` on Ethereum and one delegate Cosmos key that is used to submit `Oracle` messages.
-- `Gravity Contract` - The `Gravity Contract` is the Ethereum contract that holds all of the Gravity bridge bunds on the Ethereum side. It contains a representation of the cosmos validator set using `Delegate Keys` and normalized powers. For example if a validator has 5% of the Cosmos chain validator power, their delegate key will have 5% of the voting power in the `Gravity Contract` these value are regularly updated to keep the Cosmos and Ethereum chain validator sets in sync.
+--`Operator`-これは、Cosmos SDKバリデーターノードを制御する1人または複数の人です。これは、CosmosSDKステーキングセクションでは「valoper」または「ValidatorOperator」とも呼ばれます。
+-`フルノード `-これはオペレーターが実行する_Ethereum_フルノードです
+--`Validator`-これはCosmosSDK検証ノード(署名ブロック)です
+-`Eth Signer`(名前WIP)-これは、2つのチェーン間でトークンを移動するために使用されるトランザクションの署名に使用されるEthereum秘密鍵を保持するオペレーターによって制御される別個のバイナリです。
+-`Oracle`(名前WIP)-これは、オペレーターによって制御される別個のバイナリであり、 `クレーム`を送信することによってEthereumチェーンからCosmosチェーンにデータを転送するために使用されるCosmosSDK秘密鍵を保持します。これらのクレームは `Attestationに集約されます`
+-`Orchestrator`-`Operator`が使いやすいように `Eth Signer`、` Oracle`、および `Relayer`を組み合わせた単一のバイナリ
+--`Relayer`-これはEthereumのGravityコントラクトに更新を送信するノードのタイプです。それはバッチでトランザクションから料金を稼ぎます。
+--`RESTサーバー `-これは、検証者ノードまたはオペレーターが制御する別のCosmosSDKノードのいずれかでポート1317で実行されるCosmosSDK「RESTサーバー」です。
+-`EthereumRPC`-これはEthereumフルノード用のJSON-RPCサーバーです。
+-`Validator Set`-Cosmos SDKチェーン上のバリデーターのセットと、それぞれの投票権。これらは、テンダーミントブロックに署名するために使用されるed25519公開鍵です。
+-`Gravity Txpool`-Cosmosのチェーンストアに存在するトランザクションプールです->トランザクションバッチに配置されるのを待っているEthereumトランザクション
+-`トランザクションバッチ `-トランザクションバッチは、GravityEthereumコントラクトから同時に送信されるEthereumトランザクションのセットです。これにより、バッチを送信するコストを削減できます。バッチには最大サイズ(現在約100トランザクション)があり、Cosmos-> Ethereumフローにのみ関与します
+-`Gravity Batch pool`-格納するチェーンに存在する構造のようなトランザクションプールであり、 `Gravity Tx pool`とは別に、署名または送信中のバッチに配置されたトランザクションを格納します。 「オーケストレーターセット」
+--`EthBlockDelay`-すべてのオラクル認証が遅延するイーサリアムブロックの合意された数です。信頼できるイーサリアムフルノードで示されるように、このブロック数が経過するまで、「オーケストレーター」はイーサリアムでイベントが発生したことを証明しません。これにより、短いフォークが形成されてコスモス側で不一致が発生するのを防ぐことができます。考慮されている現在の値は50ブロックです。
+-`Observed`-イーサリアムのイベントは、特定のブロック中に設定されたアクティブなCosmosバリデーターの66％の `Eth Signers`がイベントの確認を証明するオラクルメッセージを送信した場合、` Observed`と見なされます。
+-`Validator set delta`-これは、現在Gravity Ethereum契約にあるバリデーターセットと、Cosmosチェーンにある実際のバリデーターセットとの違いを表す用語です。バリデーターセットはすべてのブロックを変更する可能性があるため、常にゼロ以外の「バリデーターセットデルタ」が存在することが基本的に保証されています。
+--`許可されたバリデーターセットデルタ `-これは許可された最大の`バリデーターセットデルタ `です。このパラメーターは、MsgProposeGravityContractのGravityコントラクトに受け入れるのに十分近いバリデーターセットがあるかどうかを判断するために使用されます。また、バリデーターセットの更新をいつ送信する必要があるかを判断するためにも使用されます。これは、MsgProposeGravityContractを送信できるようになる前のガバナンス投票によって決定されます。
+-`Gravity ID`-これは、特定のコントラクトインスタンスのすべてのGravityシグネチャに含める必要があるランダムな32バイトの値です。これはEthereumのコントラクトコンストラクターに渡され、コントラクトがバリデーターセットまたはバリデーターセットのサブセットを共有する可能性がある場合に署名の再利用を防ぐために使用されます。これは、MsgProposeGravityContractを送信できるようになる前のガバナンス投票によっても設定されます。
+-`Gravityコントラクトコードハッシュ `-これは、Gravityコントラクトソリディティコードの既知の適切なバージョンのコードハッシュです。これは、ブリッジのどのバージョンが展開されるかを正確に確認するために使用されます。
+-`Start Threshold`-これは、ブリッジが動作を開始する前に、オンラインでGravity操作に参加している必要がある総投票力のパーセンテージです。
+-`Claim`(名前WIP)-単一の `Orchestrator`インスタンスによって署名されてcosmosに送信されたEthereumイベント
+-`Attestation`(名前WIP)-最終的にすべてのオーケストレーターによって「監視」されるクレームの集合体
+--`Voucher`-コスモス側のブリッジETHトークンを表します。それらのデノムには、「重力」プレフィックスと、コントラクトアドレスとコントラクトトークンから構築されたハッシュがあります。デノムは、システム内で一意であると見なされます。
+--`Counterpart`-`Voucher`へは契約でロックされたETHトークンです
+--`Delegatekeys`-`Operator`が `EthSigner`と` Oracle`を設定するとき、 `Validator`アドレスを使用してこれらのキーを含むメッセージを送信することで` DelegateKeys`を割り当てます。イーサリアムでメッセージに署名し、イーサリアムでこの「バリデーター」を表すために使用される1つのデリゲートイーサリアムキーと、「Oracle」メッセージを送信するために使用される1つのデリゲートCosmosキーがあります。
+-`Gravity Contract` --` Gravity Contract`は、Ethereum側のすべてのGravityブリッジバンドを保持するEthereum契約です。これには、「DelegateKeys」と正規化された累乗を使用したコスモスバリデーターセットの表現が含まれています。たとえば、バリデーターがCosmosチェーンバリデーターパワーの5％を持っている場合、それらのデリゲートキーは「GravityContract」の投票パワーの5％を持ちます。これらの値は、CosmosチェーンとEthereumチェーンバリデーターセットの同期を維持するために定期的に更新されます。
 
-The _Operator_ is the key unit of trust here. Each operator is responsible for maintaining 3 secure processes:
+ここでは、_Operator_が信頼の重要な単位です。各オペレーターは、次の3つの安全なプロセスを維持する責任があります。
 
-1. Cosmos SDK Validator - signing blocks
-1. Fully synced Ethereum Full Node
-1. `Eth Signer`, which signs things with the `Operator's` Eth keys
+1. CosmosSDKバリデーター-署名ブロック
+1.完全に同期されたイーサリアムフルノード
+1.`オペレーターの `Ethキーで物事に署名する` EthSigner`
 
-## Security Concerns
+## セキュリティ上の懸念
 
-The **Validator Set** is the actual set of keys with stake behind them, which are slashed for double-signs or other
-misbehavior. We typically consider the security of a chain to be the security of a _Validator Set_. This varies on
-each chain, but is our gold standard. Even IBC offers no more security than the minimum of both involved Validator Sets.
+**バリデーターセット**は、背後にステークが付いた実際のキーのセットであり、二重記号などの場合はスラッシュで囲まれています。
+不正行為。通常、チェーンのセキュリティは_ValidatorSet_のセキュリティと見なされます。これは
+各チェーンですが、私たちのゴールドスタンダードです。 IBCでさえ、関連する両方のバリデーターセットの最小値以上のセキュリティを提供しません。
 
-The **Eth Signer** is a binary run alongside the main Cosmos daemon (`gaiad` or equivalent) by the validator set. It exists purely as a matter of code organization and is in charge of signing Ethereum transactions, as well as observing events on Ethereum and bringing them into the Cosmos state. It signs transactions bound for Ethereum with an Ethereum key, and signs over events coming from Ethereum with a Cosmos SDK key. We can add slashing conditions to any mis-signed message by any _Eth Signer_ run by the _Validator Set_ and be able to provide the same security as the _Valiator Set_, just a different module detecting evidence of malice and deciding how much to slash. If we can prove a transaction signed by any _Eth Signer_ of the _Validator Set_ was illegal or malicious, then we can slash on the Cosmos chain side and potentially provide 100% of the security of the _Validator Set_. Note that this also has access to the 3 week unbonding
-period to allow evidence to slash even if they immediately unbond.
+** Eth Signer **は、バリデーターセットによってメインのCosmosデーモン( `gaiad`または同等のもの)と一緒に実行されるバイナリです。これは純粋にコード編成の問題として存在し、イーサリアムトランザクションへの署名、およびイーサリアムでのイベントの監視とそれらのコスモス状態への移行を担当します。イーサリアムに向かうトランザクションにイーサリアムキーで署名し、イーサリアムからのイベントにCosmosSDKキーで署名します。 _ValidatorSet_によって実行される_EthSigner_によって誤って署名されたメッセージにスラッシュ条件を追加し、_Valiator Set_と同じセキュリティを提供できます。これは、悪意の証拠を検出し、スラッシュする量を決定する別のモジュールです。 _Validator Set_の_Eth Signer_によって署名されたトランザクションが違法または悪意のあるものであると証明できれば、Cosmosチェーン側を大幅に削減し、_Validator Set_のセキュリティを100％提供できる可能性があります。これは、3週間の接着解除にもアクセスできることに注意してください
+証拠がすぐに解けたとしても、証拠を大幅に削減できる期間。
 
-The **MultiSig Set** is a (possibly aged) mirror of the _Validator Set_ but with Ethereum keys, and stored on the Ethereum
-contract. If we ensure the _MultiSig Set_ is updated much more often than the unbonding period (eg at least once per week),
-then we can guarantee that all members of the _MultiSig Set_ have slashable atoms for misbehavior. However, in some extreme
-cases of stake shifting, the _MultiSig Set_ and _Validator Set_ could get quite far apart, meaning there is
-many of the members in the _MultiSig Set_ are no longer active validators and may not bother to transfer Eth messages.
-Thus, to avoid censorship attacks/inactivity, we should also update this everytime there is a significant change
-in the Validator Set (eg. > 3-5%). If we maintain those two conditions, the MultiSig Set should offer a similar level of
-security as the Validator Set.
+** MultiSig Set **は、_Validator Set_の(おそらく古くなった)ミラーですが、Ethereumキーがあり、Ethereumに保存されています
+契約する。 _MultiSig Set_が非結合期間よりもはるかに頻繁に更新されることを確認した場合(たとえば、少なくとも週に1回)、
+そうすれば、_MultiSig Set_のすべてのメンバーが、不正行為のためにスラッシュ可能なアトムを持っていることを保証できます。ただし、極端な場合
+ステークシフトの場合、_MultiSigSet_と_ValidatorSet_はかなり離れている可能性があります。つまり、
+_MultiSig Set_のメンバーの多くは、アクティブなバリデーターではなくなり、Ethメッセージを転送する必要がなくなる可能性があります。
+したがって、検閲攻撃/非アクティブを回避するために、大幅な変更があるたびにこれも更新する必要があります
+バリデーターセット内(例:> 3-5％)。これらの2つの条件を維持する場合、MultiSigセットは同様のレベルの
+バリデーターセットとしてのセキュリティ。
 
-There are now 3 conditions that can be slashed for any validator: Double-signing a block with the tendermint key from the
-**Validator Set**, signing an invalid/malicious event from Ethereum with the Cosmos SDK key held by its _Eth Signer_, or
-signing an invalid/malicious Ethereum transaction with the Ethereum key held by its _Eth Signer_. If all conditions of misbehavior can
-be attributed to a signature from one of these sets, and proven **on the Cosmos chain**, then we can argue that Gravity offers
-a security level equal to the minimum of the Peg-Zone Validator Set, or reorganizing the Ethereum Chain 50 blocks.
-And provide a security equivalent to or greater than IBC.
+現在、バリデーターに対してスラッシュできる3つの条件があります。
+**バリデーターセット**、_ EthSigner_が保持するCosmosSDKキーを使用して、イーサリアムからの無効/悪意のあるイベントに署名する、または
+_EthSigner_が保持するEthereumキーを使用して無効/悪意のあるEthereumトランザクションに署名します。不正行為のすべての条件ができる場合
+これらのセットの1つからの署名に起因し、** Cosmosチェーン**で証明されている場合、Gravityが提供するものであると主張できます。
+ペグゾーンバリデーターセットの最小値に等しいセキュリティレベル、またはイーサリアムチェーン50ブロックの再編成。
+また、IBC以上のセキュリティを提供します。
 
-## Bootstrapping
+## ブートストラップ
 
-We assume the act of upgrading the Cosmos-based binary to have gravity module is already complete,
-as approaches to that are discussed in many other places. Here we focus on the _activation_ step.
+Cosmosベースのバイナリをアップグレードして重力モジュールを作成する作業はすでに完了していると想定しています。
+それへのアプローチは他の多くの場所で議論されています。ここでは、_アクティベーション_ステップに焦点を当てます。
 
-1. Each `Operator` generates an Ethereum and Cosmos private key for their `EthSigner`. These addresses are signed and submitted by the Operators valoper key in a MsgRegisterEthSigner. The `EthSigner` is now free to use these delegated keys for all Gravity messages.
-1. A governance vote is held on bridge parameters including `Gravity ID`, `Allowed validator set delta`, `start threshold`, and `Gravity contract code hash`
-1. Anyone deploys a Gravity contract using a known codehash and the current validator set of the Cosmos zone to an Ethereum compatible blockchain.
-1. Each `Operator` may or may not configure their `Eth Signer` with the above Gravity contract address
-1. If configured with an address the `Eth Signer` checks the provided address. If the contract passes validation the `Eth Signer` signs and submits a MsgProposeGravityContract. Validation is defined as finding the correct `Gravity contract code hash` and a validator set matching the current set within `Allowed validator set delta`.
-1. A contract address is considered adopted when voting power exceeding the `start threshold` has sent a MsgProposeGravityContract with the same Ethereum address.
-1. Because validator sets change quickly, `Eth Signers` not configured with a contract address observe the Cosmos blockchain for submissions. When an address is submitted they validate it and approve it themselves if it passes. This results in a workflow where once a valid contract is proposed it will be ratified in a matter of a few seconds.
-1. It is possible for the adoption process to fail if a race condition is intentionally created resulting in less than 66% of the validator power approving more than one valid Gravity Ethereum contract. In this case the Orchestrator will check the contract address with the majority of the power (or at random in the case of a perfect tie) and switch it's vote. This leaves only the possible edge case of >33% of `Operators` intentionally selecting a different contract address. This would be a consensus failure and the bridge can not progress.
-1. The bridge ratification process is complete, the contract address is now placed in the store to be referenced and other operations are allowed to move forward.
+1.各 `Operator`は、` EthSigner`のEthereumおよびCosmos秘密鍵を生成します。これらのアドレスは、MsgRegisterEthSignerのOperatorsvaloperキーによって署名および送信されます。 `EthSigner`は、すべてのGravityメッセージにこれらの委任されたキーを自由に使用できるようになりました。
+1.「重力ID」、「許可されたバリデーターセットデルタ」、「開始しきい値」、「重力契約コードハッシュ」などのブリッジパラメーターに対してガバナンス投票が行われます。
+1.既知のコードハッシュと、Cosmosゾーンの現在のバリデーターセットを使用して、Ethereum互換のブロックチェーンにGravityコントラクトをデプロイします。
+1.各 `Operator`は、上記のGravity契約アドレスを使用して` EthSigner`を構成する場合と構成しない場合があります。
+1.アドレスで構成されている場合、 `EthSigner`は提供されたアドレスをチェックします。契約が検証に合格すると、「Eth Signer」が署名し、MsgProposeGravityContractを送信します。検証は、正しい「重力コントラクトコードハッシュ」と「許可されたバリデーターセットデルタ」内の現在のセットに一致するバリデーターセットを見つけることとして定義されます。
+1.「開始しきい値」を超える投票権が同じイーサリアムアドレスでMsgProposeGravityContractを送信した場合、契約アドレスが採用されたと見なされます。
+1.バリデーターセットはすぐに変更されるため、契約アドレスで構成されていない「Eth Signers」は、送信のためにCosmosブロックチェーンを監視します。アドレスが送信されると、彼らはそれを検証し、合格した場合は自分で承認します。これにより、有効な契約が提案されると、数秒で承認されるワークフローが実現します。
+1.競合状態が意図的に作成され、検証者の電力の66％未満が複数の有効な重力イーサリアム契約を承認した場合、採用プロセスが失敗する可能性があります。この場合、オーケストレーターは、権力の大部分で(または完全な同点の場合はランダムに)契約アドレスを確認し、投票を切り替えます。これにより、「オペレーター」の33％以上が意図的に別の契約アドレスを選択する可能性のあるエッジケースのみが残ります。これはコンセンサスの失敗であり、ブリッジは進行できません。
+1.ブリッジの承認プロセスが完了し、契約アドレスが参照対象のストアに配置され、他の操作を進めることができます。
 
-At this point, we know we have a contract on Ethereum with the proper _MultiSig Set_, that > `start threshold` of the _Orchestrator Set_ is online and agrees with this contract, and that the Cosmos chain has stored this contract address. Only then can we begin to accept transactions to transfer tokens
+この時点で、適切な_MultiSig Set_とEthereumの契約があり、_Orchestrator Set_の> `start threshold`がオンラインであり、この契約に同意し、Cosmosチェーンがこの契約アドレスを保存していることがわかります。そうして初めて、トークンを転送するためのトランザクションの受け入れを開始できます
 
-Note: `start threshold` is some security factor for bootstrapping. 67% is sufficient to release, but we don't want to start until there is a margin of error online (not to fall off with a small change of voting power). This may be 70, 80, 90, or even 95% depending on how much assurances we want that all _Orchestrators_ are operational before starting.
+注:「開始しきい値」は、ブートストラップのセキュリティ要因です。解放するには67％で十分ですが、オンラインで許容誤差が生じるまで開始したくありません(投票権のわずかな変更で落ちないようにします)。これは、開始する前にすべての_オーケストレーター_が動作していることを保証する度合いに応じて、70、80、90、または95％になる可能性があります。
 
-## ETH to Cosmos Oracle
+## ETHからCosmosOracle
 
-All `Operators` run an `Oracle` binary. This separate process monitors an Ethereum node for new events involving the `Gravity Contract` on the Ethereum chain. Every event that `Oracle` monitors has an event nonce. This nonce is a unique coordinating value for a `Claim`. Since every event that may need to be observed by the `Oracle` has a unique event nonce `Claims` can always refer to a unique event by specifying the event nonce.
+すべての `Operators`は` Oracle`バイナリを実行します。この個別のプロセスは、イーサリアムチェーン上の「重力コントラクト」に関連する新しいイベントについてイーサリアムノードを監視します。 `Oracle`が監視するすべてのイベントにはイベントナンスがあります。このナンスは、 `Claim`の一意の調整値です。 `Oracle`が監視する必要のあるすべてのイベントには一意のイベントナンスがあるため、` Claims`はイベントナンスを指定することで常に一意のイベントを参照できます。
 
-- An `Oracle` observes an event on the Ethereum chain, it packages this event into a `Claim` and submits this claim to the cosmos chain
-- Within the Gravity Cosmos module this `Claim` either creates or is added to an existing `Attestation` that matches the details of the `Claim` once more than 66% of the active `Validator` set has made a `Claim` that matches the given `Attestation` the `Attestation` is executed. This may mint tokens, burn tokens, or whatever is appropriate for this particular event.
-- In the event that the validators can not agree >66% on a single `Attestation` the oracle is halted. This means no new events will be relayed from Ethereum until some of the validators change their votes. There is no slashing condition for this, because having one would risk the liveness of the chain itself if there was an expected Ethereum fork.
+-「オラクル」はイーサリアムチェーン上のイベントを監視し、このイベントを「クレーム」にパッケージ化し、このクレームをコスモスチェーンに送信します
+-Gravity Cosmosモジュール内で、この `Claim`は、アクティブな` Validator`セットの66％以上が一致する `Claim`を作成すると、` Claim`の詳細と一致する既存の `Attestation`を作成または追加します。与えられた `Attestation``Attestation`が実行されます。これにより、トークンの作成、トークンの書き込み、またはこの特定のイベントに適したものが可能になります。
+-バリデーターが単一の「Attestation」で66％を超えることに同意できない場合、オラクルは停止されます。これは、一部のバリデーターが投票を変更するまで、新しいイベントがイーサリアムから中継されないことを意味します。予想されるイーサリアムフォークがあった場合、チェーン自体の活気を危険にさらす可能性があるため、これにはスラッシュ条件はありません。
 
-## Relaying Cosmos to ETH
+## コスモスをETHに中継する
 
-- A user sends a MsgSendToEth when they want to transfer tokens across to Ethereum. This debits the tokens from their account, and places a transaction in the `Gravity Tx Pool`
-- Someone (permissionlessly) sends a MsgRequestBatch, this produces a new `Transaction batch` in the `Gravity Batch pool`. The creation of this batch occurs in CosmosSDK and is entirely deterministic, and should create the most profitable batch possible out of transactions in the `Gravity Tx Pool`.
-  - The `TransactionBatch` includes a batch nonce.
-  - It also includes the latest `Valset`
-  - The transactions in this batch are removed from the `Gravity Tx Pool`, and cannot be included in a new batch.
-- Batches in the `Gravity Batch Pool` are signed over by the `Validator Set`'s `Eth Signers`.
-  - `Relayers` may now attempt to submit these batches to the Gravity contract. If a batch has enough signatures (2/3+1 of the `Multisig Set`), it's submission will succeed. The decision whether or not to attempt a batch submission is entirely up to a given `Relayer`.
-- Once a batch is `Observed` to have been successfully submitted to Ethereum (this takes at least as long as the `EthBlockDelay`), any batches in the `Gravity Batch Pool` which have a lower nonce, and have not yet been successfully submitted have their transactions returned to the `Gravity Tx Pool` to be tried in a new batch. This is safe because we know that these batches cannot possibly be submitted any more since their nonces are too low.
+-ユーザーがトークンをEthereumに転送する場合、ユーザーはMsgSendToEthを送信します。これにより、アカウントからトークンが引き落とされ、トランザクションが「GravityTxPool」に配置されます。
+-誰かが(許可なく)MsgRequestBatchを送信します。これにより、「GravityBatchpool」に新しい「Transactionbatch」が生成されます。このバッチの作成はCosmosSDKで行われ、完全に決定論的であり、「GravityTxPool」のトランザクションから可能な限り最も収益性の高いバッチを作成する必要があります。
+  -`TransactionBatch`にはバッチナンスが含まれています。
+  -後期も含まれますst`ヴァルセット `
+  -このバッチのトランザクションは `Gravity Tx Pool`から削除され、新しいバッチに含めることはできません。
+-`Gravity Batch Pool`のバッチは、 `ValidatorSet`の` EthSigners`によって署名されます。
+  -`Relayers`は、これらのバッチをGravityコントラクトに送信しようとする可能性があります。バッチに十分な署名( `MultisigSet`の2/3 + 1)がある場合、その送信は成功します。バッチ送信を試みるかどうかの決定は、完全に特定の「リレイヤー」次第です。
+-バッチがEthereumに正常に送信されたことが「監視」されると(これには少なくとも「EthBlockDelay」と同じ時間がかかります)、「Gravity BatchPool」内のナンスが低く、まだ正常に送信されていないバッチ送信されたトランザクションは、新しいバッチで試行するために「GravityTxPool」に戻されます。これらのバッチはナンスが低すぎるため、これ以上送信できない可能性があることがわかっているため、これは安全です。
 
-- When a new MsgRequestBatch comes in a new batch will not be produced unless it is more profitable than any batch currently in the `Gravity Batch Pool`. This means that when there is a batch backlog batches _must_ become progressively more profitable to submit.
+-新しいMsgRequestBatchが入ってくると、現在「重力バッチプール」にあるどのバッチよりも収益性が高い場合を除いて、新しいバッチは生成されません。これは、バッチのバックログがある場合、バッチを送信することで徐々に収益性を高める必要があることを意味します。

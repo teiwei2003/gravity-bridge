@@ -1,56 +1,56 @@
-# Orchestrator folder
+# オーケストレーターフォルダー
 
-### client/
+### クライアント/
 
-This folder builds a binary that is a client application for the gravity system. It contains the following commands:
-- `cosmos-to-eth`
-- `eth-to-cosmos`
-- `deploy-erc20-representation`
+このフォルダーは、重力システムのクライアントアプリケーションであるバイナリを構築します。次のコマンドが含まれています。
+-`cosmos-to-eth`
+-`eth-to-cosmos`
+-`deploy-erc20-representation`
 
 ### cosmos_gravity/
 
-This is a library for interacting with the cosmos chain both queries and transactions. It substantally wraps `gravity_proto`.
+これは、クエリとトランザクションの両方でコスモスチェーンと対話するためのライブラリです。実質的に `gravity_proto`をラップします。
 
 ### ethereum_gravity/
 
-This is a library that contains code for the interactions with the counterparty ethereum chain.
+これは、カウンターパーティのイーサリアムチェーンとの相互作用のためのコードを含むライブラリです。
 
 ### gravity_proto/
 
-`prost` generated bindings for working with the gravity protobuf objects.
+`prost`は、重力protobufオブジェクトを操作するためのバインディングを生成しました。
 
 ### gravity_utils/
 
-Various utilities for working with the `gravity` code.
+`gravity`コードを操作するためのさまざまなユーティリティ。
 
-### orchestrator/
+### オーケストレーター/
 
-The package to build the orchestartor binary.
+orchestartorバイナリをビルドするためのパッケージ。
 
 ### proto_build/
 
-Run `cargo run` in this folder to build `gravity_proto` also note, this will generate too many files. Only `gravity.v1.rs` is required.
+このフォルダで `cargo run`を実行して、` gravity_proto`をビルドします。これには、生成されるファイルが多すぎることに注意してください。 `gravity.v1.rs`のみが必要です。
 
 ### register_delegate_keys/
 
-This is a sepreate binary for running a command to register delegate keys for a validator. NOTE: this needs to be done in `gentx` now so this is likely no longer needed.
+これは、バリデーターのデリゲートキーを登録するコマンドを実行するための個別のバイナリです。注:これは `gentx`で実行する必要があるため、これはもう必要ない可能性があります。
 
-### relayer/
+### リレー/
 
-This is to build the relayer logic (i.e. cosmos to ethereum) as a seperate binary. It also contains the library for the relayer.
+これは、リレーロジック(つまり、コスモスからイーサリアム)を個別のバイナリとして構築するためのものです。また、中継器用のライブラリも含まれています。
 
-### scripts/
+### スクリプト/
 
-Supporting bash scripts for this library
+このライブラリのbashスクリプトのサポート
 
 ### test_runner/
 
-A binary which runs tests against a cosmos chain
+コスモスチェーンに対してテストを実行するバイナリ
 
 
 ## CLI
 
-### CURRENT
+### 現在
 
 ```
 client cosmos-to-eth --cosmos-phrase=<key> --cosmos-grpc=<url> --cosmos-prefix=<prefix> --cosmos-denom=<denom> --amount=<amount> --eth-destination=<dest> [--no-batch] [--times=<number>]
@@ -64,7 +64,7 @@ test_runner
 
 ## PROPOSED
 
-Proposing the name `gorc` for the binary. This is short for `gravity-orchestrator`.
+バイナリの名前 `gorc`を提案します。 これは `gravity-orchestrator`の略です。
 
 ```
 gorc

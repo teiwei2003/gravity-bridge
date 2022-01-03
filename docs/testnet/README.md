@@ -1,4 +1,4 @@
-### Conceptual Goals:
+# Conceptual Goals:
 * Have an easily understood network layout based on docker or other infrastructure tooling
 * Have a one click deploy of a full network
 * Allow definition of deployment of a network in certain states or based on defined preconditions

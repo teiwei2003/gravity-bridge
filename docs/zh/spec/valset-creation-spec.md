@@ -1,15 +1,15 @@
-## Validator set creation
+# 验证器集创建
 
-In Gravity when we talk about a `valset` we mean a `validator set update` which is a series of ethereum addresses with attached normalized powers used to represent the Cosmos validator set in the Gravity Ethereum contract. Since the Cosmos validator set can and will change frequently. 
+在 Gravity 中，当我们谈论“valset”时，我们指的是“验证器集更新”，它是一系列带有标准化权力的以太坊地址，用于代表 Gravity 以太坊合约中的 Cosmos 验证器集。由于 Cosmos 验证器集可以并且会经常更改。
 
-Validator set creation is a critical part of the Gravity system. The goal is to produce and sign enough validator sets that no matter which one is in the Ethereum contract there is an unbroken chain of correctly signed state updates (greater than 66% of the previous voting power) to sync the Ethereum contract with the current Cosmos validator set.
+验证器集创建是 Gravity 系统的关键部分。目标是生成并签署足够多的验证器集，无论以太坊合约中的哪一个，都有一条完整的正确签署状态更新链(大于先前投票权的 66%)以将以太坊合约与当前的 Cosmos 同步验证器集。
 
-The key to understanding valset creation is to understand that it is *absolutely impossible* for either side be fully synced with the other. The Cosmos chain has finality, but produces blocks so much faster than Ethereum that the validator set could change completely 6 times over between Ethereum blocks. In the other direction Ethereum does not have finality, so there is a significant block delay before the Cosmos chain can know what occurred on Ethereum. It's because of these fundamental restrictions that we focus on continuity of produced validator sets rather than determining what the 'last state on Ethereum' is.
+理解 valset 创建的关键是要了解任何一方与另一方完全同步 *绝对不可能*。 Cosmos 链具有终结性，但生成区块的速度比以太坊快得多，以至于以太坊区块之间的验证器集可以完全改变 6 次。另一方面，以太坊没有最终确定性，因此在 Cosmos 链知道以太坊上发生了什么之前存在明显的区块延迟。正是由于这些基本限制，我们专注于生成的验证器集的连续性，而不是确定“以太坊上的最后状态”是什么。
 
-### When are validator sets created
+### 何时创建验证器集
 
-1. If there are no valset requests, create a new one
-2. If there is at least one validator who started unbonding in current block. (we persist last unbonded block height in hooks.go)
-			   This will make sure the unbonding validator has to provide an attestation to a new Valset
-		       that excludes him before he completely Unbonds.  Otherwise he will be slashed
-3. If power change between validators of CurrentValset and latest valset request is > 5%
+1.如果没有valset请求，则创建一个新的
+2. 如果当前区块中至少有一个验证者开始解绑。 (我们在 hooks.go 中保留最后一个未绑定的块高度)
+这将确保解绑验证器必须为新的 Valset 提供证明
+在他完全解绑之前，这将他排除在外。否则会被砍
+3. 如果 CurrentValset 的验证器和最新的 valset 请求之间的功率变化 > 5%

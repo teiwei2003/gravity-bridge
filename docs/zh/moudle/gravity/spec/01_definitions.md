@@ -1,55 +1,55 @@
-# Definitions
+# 定义
 
-This section outlines terminology used throughout the spec and code.
+本节概述了整个规范和代码中使用的术语。
 
-### Operator
+### 操作员
 
-This is a person (or people) who control a Cosmos SDK validator node. This is also called `valoper` or "Validator Operator" in the Cosmos SDK staking section
+这是控制 Cosmos SDK 验证器节点的一个(或多个)人。这在 Cosmos SDK staking 部分也称为 `valoper` 或“Validator Operator”
 
-### Counter Chain
+### 计数器链
 
-A chain that utilizes an EVM. Some examples of this are Polygon, Ethereum, and Ethereum Classic.
+使用 EVM 的链。这方面的一些例子是 Polygon、以太坊和以太坊经典。
 
-### Relayer
+### 中继器
 
-This is a type of node that submits updates to the Gravity contract on the counter chain and vice versa. It earns fees from the transactions in a batch.
+这是一种向计数器链上的 Gravity 合约提交更新的节点，反之亦然。它从批量交易中赚取费用。
 
-### Gravity Tx Pool
+### 重力 Tx 池
 
-Is a transaction pool that exists in the chain store of Cosmos -> Ethereum transactions waiting to be placed into a transaction batch
+是存在于 Cosmos 的连锁店中的交易池 -> 以太坊交易等待放入交易批次
 
-### Transaction Batch
+### 交易批次
 
-A transaction batch is a set of Ethereum transactions to be sent from the Gravity Ethereum contract at the same time. This helps reduce the costs of submitting a batch. Batches have a maximum size (currently around 100 transactions) and are only involved in the Cosmos -> Ethereum flow
+交易批次是同时从 Gravity 以太坊合约发送的一组以太坊交易。这有助于降低提交批次的成本。批次有最大大小(目前大约 100 笔交易)并且只涉及 Cosmos -> Ethereum 流程
 
-### Gravity Batch Pool
+### 重力批处理池
 
-Is a transaction pool like structure that exists in the chains to store, separate from the `Gravity Tx Pool` it stores transactions that have been placed in batches that are in the process of being signed or being submitted by the `Orchestrator Set`
+是一个存在于链中的类似交易池的结构来存储，与`Gravity Tx Pool`分开，它存储已经被分批放置的交易，这些交易正在被`Orchestrator Set`签名或提交的过程中
 
-### Observed 
+### 观测到的
 
-Events on Ethereum are considered `Observed` when the `Eth Signers` of 66% of the active Cosmos validator set during a given block has submitted an oracle message attesting to seeing the event.
+当给定区块期间 66% 的活跃 Cosmos 验证者集的“Eth Signers”提交了证明看到该事件的 oracle 消息时，以太坊上的事件被视为“已观察到”。
 
-### Validator Set Delta
+### 验证器集增量
 
-This is a term for the difference between the validator set currently in the Gravity Ethereum contract and the actual validator set on the Cosmos chain. Since the validator set may change every single block there is essentially guaranteed to be some nonzero `Validator set delta` at any given time.
+这是当前在 Gravity Ethereum 合约中设置的验证器与 Cosmos 链上设置的实际验证器之间的差异的术语。由于验证器集可能会更改每个单个块，因此基本上可以保证在任何给定时间都有一些非零的“验证器集增量”。
 
-### Claim
+### 宣称
 
-An Ethereum event signed and submitted to cosmos by a single `Orchestrator` instance.
+一个以太坊事件由单个“Orchestrator”实例签名并提交给 Cosmos。
 
-### Attestation
+### 证明
 
-Aggregate of claims that eventually becomes `observed` by all orchestrators.
+最终被所有协调器“观察到”的声明的聚合。
 
-### Voucher
+### 代金券
 
-Represents a bridged ETH token on the Cosmos side. Their denom is has a `gravity` prefix and a hash that is build from contract address and contract token. The denom is considered unique within the system.
+代表 Cosmos 端的桥接 ETH 代币。他们的名称有一个“gravity”前缀和一个由合约地址和合约代币构建的哈希。该分值在系统内被认为是唯一的。
 
-### Counterpart
+### 对方
 
-A `Voucher` which is the locked opposing chain token in the contract
+一个“凭证”，它是合约中锁定的反链代币
 
-### Logic Calls
+### 逻辑调用
 
-A logic call refers to a created action for a smart contract interaction on the opposing chain. 
+逻辑调用是指在相反链上为智能合约交互创建的操作。

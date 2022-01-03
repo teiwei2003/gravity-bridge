@@ -1,56 +1,56 @@
-# Orchestrator folder
+# Orchestrator 文件夹
 
-### client/
+### 客户/
 
-This folder builds a binary that is a client application for the gravity system. It contains the following commands:
+此文件夹构建一个二进制文件，它是重力系统的客户端应用程序。它包含以下命令:
 - `cosmos-to-eth`
 - `eth-to-cosmos`
 - `deploy-erc20-representation`
 
-### cosmos_gravity/
+### 宇宙引力/
 
-This is a library for interacting with the cosmos chain both queries and transactions. It substantally wraps `gravity_proto`.
+这是一个用于与 Cosmos 链进行查询和交易交互的库。它基本上包装了`gravity_proto`。
 
 ### ethereum_gravity/
 
-This is a library that contains code for the interactions with the counterparty ethereum chain.
+这是一个包含与交易对手以太坊链交互的代码的库。
 
 ### gravity_proto/
 
-`prost` generated bindings for working with the gravity protobuf objects.
+`prost` 生成用于处理重力 protobuf 对象的绑定。
 
 ### gravity_utils/
 
-Various utilities for working with the `gravity` code.
+用于处理 `gravity` 代码的各种实用程序。
 
-### orchestrator/
+### 编排器/
 
-The package to build the orchestartor binary.
+用于构建 orchestartor 二进制文件的包。
 
 ### proto_build/
 
-Run `cargo run` in this folder to build `gravity_proto` also note, this will generate too many files. Only `gravity.v1.rs` is required.
+在这个文件夹中运行 `cargo run` 来构建 `gravity_proto` 还要注意，这会生成太多的文件。只需要`gravity.v1.rs`。
 
 ### register_delegate_keys/
 
-This is a sepreate binary for running a command to register delegate keys for a validator. NOTE: this needs to be done in `gentx` now so this is likely no longer needed.
+这是一个单独的二进制文件，用于运行为验证器注册委托密钥的命令。注意:这需要现在在 `gentx` 中完成，所以这可能不再需要了。
 
-### relayer/
+### 中继器/
 
-This is to build the relayer logic (i.e. cosmos to ethereum) as a seperate binary. It also contains the library for the relayer.
+这是为了将中继器逻辑(即从宇宙到以太坊)构建为单独的二进制文件。它还包含中继器的库。
 
-### scripts/
+### 脚本/
 
-Supporting bash scripts for this library
+支持此库的 bash 脚本
 
 ### test_runner/
 
-A binary which runs tests against a cosmos chain
+针对 Cosmos 链运行测试的二进制文件
 
 
-## CLI
+## 命令行界面
 
-### CURRENT
+### 当前的
 
 ```
 client cosmos-to-eth --cosmos-phrase=<key> --cosmos-grpc=<url> --cosmos-prefix=<prefix> --cosmos-denom=<denom> --amount=<amount> --eth-destination=<dest> [--no-batch] [--times=<number>]
@@ -62,9 +62,9 @@ relayer --ethereum-key=<key> --cosmos-grpc=<url> --address-prefix=<prefix> --eth
 test_runner 
 ```
 
-## PROPOSED
+## 建议的
 
-Proposing the name `gorc` for the binary. This is short for `gravity-orchestrator`.
+为二进制文件提议名称`gorc`。 这是“gravity-orchestrator”的缩写。
 
 ```
 gorc

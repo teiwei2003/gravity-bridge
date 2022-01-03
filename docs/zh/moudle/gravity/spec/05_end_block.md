@@ -1,34 +1,34 @@
-# End-Block
+# 结束块
 
-Each abci end block call, the operations to update queues and validator set
-changes are specified to execute.
+每个 abci 结束块调用，更新队列和验证器集的操作
+更改被指定执行。
 
-## Slashing
+## 削减
 
-Slashing groups multiple types of slashing (validator set, batch and claim slashing). We will cover how these work in the following sections.
+Slashing 包含多种类型的 slashing(验证器设置、批处理和声明 slashing)。我们将在以下部分介绍它们的工作原理。
 
-### Validator Slashing
+### 验证器削减
 
-A validator is slashed for not signing over a validatorset. The Cosmos-SDK allows active validator sets to change from block to block, for this reason we need to store multiple validator sets within a single unbonding period. This allows validators to not be slashed. 
+验证器因未签署验证器集而被削减。 Cosmos-SDK 允许活跃的验证者集在块之间变化，因此我们需要在单个解绑期内存储多个验证者集。这允许验证器不会被削减。
 
-A validator will be slashed or missing a single confirmation signing.
+验证器将被削减或丢失单个确认签名。
 
-### Batch Slashing
+### 批量削减
 
-A validator is slashed for not signing over a batch request. A validator will be slashed for missing 
+验证器因未签署批处理请求而被削减。验证器将因丢失而被削减
 
-## Attestation
+## 证明
 
-Iterates through all attestations currently being voted on. Once an attestation nonce one higher than the previous one, we stop searching for an attestation and call `TryAttestation`. Once an attestation at a specific nonce has enough votes all the other attestations will be skipped and the `lastObservedEventNonce` incremented.
+迭代当前正在投票的所有证明。一旦证明随机数比前一个高一，我们就停止搜索证明并调用“TryAttestation”。一旦特定随机数的证明有足够的票数，所有其他证明将被跳过，并且 `lastObservedEventNonce` 增加。
 
-## Cleanup
+## 清理
 
-Cleanup loops through batches and logic calls in order to clean up the timed out transactions.
+清理循环通过批处理和逻辑调用以清理超时事务。
 
-### Batches
+### 批次
 
-When a batch of transactions are created they have a specified height of the opposing chain for when the batch becomes invalid. When this happens we must remove them from the store. At the end of every block, we loop through the store of logic calls checking the the timeout heights. 
+当一批交易被创建时，它们具有指定的反向链高度，用于当批次无效时。发生这种情况时，我们必须将它们从商店中删除。在每个块的末尾，我们循环检查超时高度的逻辑调用存储。
 
-### Logic Calls
+### 逻辑调用
 
-When a logic call is created it consists of a timeout height. This height is used to know when the logic call becomes invalid. At the end of every block, we loop through the store of logic calls checking the the timeout heights. 
+创建逻辑调用时，它包含超时高度。这个高度用于知道逻辑调用何时失效。在每个块的末尾，我们循环检查超时高度的逻辑调用存储。

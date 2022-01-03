@@ -1,60 +1,60 @@
-## Building
+## 建造
 
-On first run:
-make proto-update-deps
-make proto-tools
-To build:
-make
+第一次运行时:
+制作 proto-update-deps
+制作原型工具
+构建:
+制作
 
-## Early MVP
+## 早期MVP
 
-Happy path implementations
+快乐路径实现
 
 ### Oracle
 
-#### Assumptions
+#### 假设
 
-- An orchestrator may want to submit multiple claims with a msg (withdrawal batch update + MultiSig Set update )
-- Nonces are not unique without a context (withdrawal nonce and MultiSig Set update can have same nonce (=height))
-- A nonce is unique in it's context and never reused
-- Multiple claims by an orchestrator for the same ETH event are forbidden
-- We know the ETH event types beforehand (and handle them as ClaimTypes)
-- For an **observation** status in Attestation the power AND count thresholds must be exceeded
-- Fraction type allows higher precision math than %. For example with 2/3
+- 协调器可能想用一个 msg 提交多个声明(提款批量更新 + MultiSig Set 更新)
+- Nonce 在没有上下文的情况下不是唯一的(提取 nonce 和 MultiSig Set 更新可以具有相同的 nonce (=height))
+- 随机数在其上下文中是唯一的，并且永远不会被重用
+- 禁止协调者对同一 ETH 事件进行多次声明
+- 我们事先知道 ETH 事件类型(并将它们作为 ClaimType 处理)
+- 对于证明中的**观察**状态，必须超过功率和计数阈值
+- 分数类型允许比 % 更精确的数学运算。例如与 2/3
 
-A good start to follow the process would be the `x/gravity/handler_test.go` file
+遵循这个过程的一个好的开始是 `x/gravity/handler_test.go` 文件
 
-### Outgoing TX Pool
+### 传出 TX 池
 
-#### Features
+#### 特征
 
-- Unique denominator for gravity vouchers in cosmos (🚧 cut to 15 chars and without a separator due to sdk limitations in v0.38.4)
-- Voucher burning 🔥 (minting in test ⛏️ )
-- Store/ resolve bridged ETH denominator and contract
-- Persistent transaction pool
-- Transactions sorted by fees (on a second index)
-- Extended test setup
+- 宇宙中重力凭证的独特分母(🚧 由于 v0.38.4 中的 sdk 限制，切成 15 个字符且没有分隔符)
+- 代金券燃烧🔥(测试中铸造⛏️)
+- 存储/解决桥接的 ETH 分母和合约
+- 持久的交易池
+- 按费用排序的交易(在第二个索引上)
+- 扩展测试设置
 
-#### Assumptions
+#### 假设
 
-- We have only 1 chainID and 1 ETH contract
+- 我们只有 1 个 chainID 和 1 个 ETH 合约
 
-### Bundle Outgoing TX into Batches
+### 将传出的 TX 捆绑成批
 
-#### Features
+#### 特征
 
-- `BatchTx` type with `OutgoingTransferTx` and `TransferCoin`
-- Logic to build batch from pending TXs based on fee desc order
-- Logic to cancel a batch and revert TXs back to pending pool
-- Incremental and unique IDs for batches to be used for `nonces`
-- `VoucherDenom` as first class type
+- 带有“OutgoingTransferTx”和“TransferCoin”的“BatchTx”类型
+- 根据费用降序从挂起的 TX 构建批次的逻辑
+- 取消批次并将 TX 恢复到待处理池的逻辑
+- 用于“随机数”的批次的增量和唯一 ID
+- `VoucherDenom` 作为第一类类型
 
-## Not covered/ implemented
+## 未涵盖/实施
 
-- [ ] unhappy cases
-- [ ] proper unit + integration tests
-- [ ] message validation
-- [ ] Genesis I/O
-- [ ] Parameters
-- [ ] authZ: EthereumChainID whitelisted
-- [ ] authZ: bridge contract address whitelisted
+- [ ] 不愉快的情况
+- [] 适当的单元 + 集成测试
+- [] 消息验证
+- [ ] 创世纪 I/O
+- [ ] 参数
+- [ ] authZ: EthereumChainID 白名单
+- [ ] authZ: 桥接合约地址白名单

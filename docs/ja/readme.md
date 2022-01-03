@@ -1,145 +1,145 @@
-# Gravity Bridge
+# 重力橋
 
-![Gravity Bridge](../gravity-bridge.svg)
+！[重力橋](../gravity-bridge.svg)
 
-Gravity bridge is Cosmos <-> Ethereum bridge designed to run on the [Cosmos Hub](https://github.com/cosmos/gaia) focused on maximum design simplicity and efficiency.
+重力ブリッジはCosmos <-> Ethereumブリッジであり、[Cosmos Hub](https://github.com/cosmos/gaia)で実行するように設計されており、設計のシンプルさと効率を最大限に高めることに重点を置いています。
 
-Gravity can transfer ERC20 assets originating on Ethereum to a Cosmos based chain and back to Ethereum.
+Gravityは、Ethereumで発生したERC20アセットをCosmosベースのチェーンに転送してEthereumに戻すことができます。
 
-The ability to transfer assets originating on Cosmos to an ERC20 representation on Ethereum is coming within a few months.
+Cosmosで作成されたアセットをEthereumのERC20表現に転送する機能は、数か月以内に提供されます。
 
-## Status
+## 状態
 
-Gravity bridge is under development and will be undergoing audits soon. Instructions for deployment and use are provided in the hope that they will be useful.
+重力橋は開発中であり、まもなく監査を受ける予定です。展開と使用の手順は、役立つことを期待して提供されています。
 
-It is your responsibility to understand the financial, legal, and other risks of using this software. There is no guarantee of functionality or safety. You use Gravity entirely at your own risk.
+このソフトウェアを使用することの経済的、法的、およびその他のリスクを理解するのはあなたの責任です。機能や安全性を保証するものではありません。 Gravityは完全に自己責任で使用してください。
 
-You can keep up with the latest development by watching our [public standups](https://www.youtube.com/playlist?list=PL1MwlVJloJeyeE23-UmXeIx2NSxs_CV4b) feel free to join yourself and ask questions.
+[公開スタンドアップ](https://www.youtube.com/playlist?list=PL1MwlVJloJeyeE23-UmXeIx2NSxs_CV4b)をご覧になり、最新の開発状況についていくことができます。気軽に参加して質問してください。
 
-- Solidity Contract
-  - [x] Multiple ERC20 support
-  - [x] Tested with 100+ validators
-  - [x] Unit tests for every throw condition
-  - [x] Audit for assets originating on Ethereum
-  - [ ] Support for issuing Cosmos assets on Ethereum
-- Cosmos Module
-  - [x] Basic validator set syncing
-  - [x] Basic transaction batch generation
-  - [x] Ethereum -> Cosmos Token issuing
-  - [x] Cosmos -> Ethereum Token issuing
-  - [x] Bootstrapping
-  - [x] Genesis file save/load
-  - [x] Validator set syncing edge cases
-  - [x] Slashing
-  - [x] Relaying edge cases
-  - [ ] Transaction batch edge cases
-  - [ ] Support for issuing Cosmos assets on Ethereum
-  - [ ] Audit
-- Orchestrator / Relayer
-  - [x] Validator set update relaying
-  - [x] Ethereum -> Cosmos Oracle
-  - [x] Transaction batch relaying
-  - [ ] Tendermint KMS support
-  - [ ] Audit
+-堅実な契約
+  -[x]複数のERC20サポート
+  -[x] 100以上のバリデーターでテスト済み
+  -[x]すべてのスロー条件のユニットテスト
+  -[x]イーサリアムに由来する資産の監査
+  -[]イーサリアムでのコスモスアセットの発行のサポート
+-コスモスモジュール
+  -[x]基本的なバリデーターセットの同期
+  -[x]基本的なトランザクションバッチの生成
+  -[x]イーサリアム->コスモストークン発行
+  -[x]コスモス->イーサリアムトークン発行
+  -[x]ブートストラップ
+  -[x] Genesisファイルの保存/読み込み
+  -[x]バリデーターセットの同期エッジケース
+  -[x]スラッシュ
+  -[x]リレーエッジケース
+  -[]トランザクションバッチエッジケース
+  -[]イーサリアムでのコスモスアセットの発行のサポート
+  - [ ] 監査
+-オーケストレーター/リレイヤー
+  -[x]バリデーターセット更新リレー
+  -[x]イーサリアム->コスモスオラクル
+  -[x]トランザクションバッチリレー
+  -[] TendermintKMSのサポート
+  - [ ] 監査
 
-## The design of Gravity Bridge
+## 重力橋の設計
 
-- Trust in the integrity of the Gravity bridge is anchored on the Cosmos side. The signing of fraudulent validator set updates and transaction batches meant for the Ethereum contract is punished by slashing on the Cosmos chain. If you trust the Cosmos chain, you can trust the Gravity bridge operated by it, as long as it is operated within certain parameters.
-- It is mandatory for peg zone validators to maintain a trusted Ethereum node. This removes all trust and game theory implications that usually arise from independent relayers, once again dramatically simplifying the design.
+-重力橋の完全性への信頼は、コスモス側に固定されています。イーサリアム契約を対象とした不正なバリデーターセットの更新とトランザクションバッチの署名は、コスモスチェーンを大幅に削減することで罰せられます。 Cosmosチェーンを信頼する場合、特定のパラメーター内で操作される限り、Cosmosチェーンによって操作されるGravityブリッジを信頼できます。
+-ペグゾーンバリデーターは、信頼できるイーサリアムノードを維持する必要があります。これにより、通常は独立した中継器から生じるすべての信頼とゲーム理論の影響が排除され、設計が大幅に簡素化されます。
 
-## Key design Components
+## 主要な設計コンポーネント
 
-- A highly efficient way of mirroring Cosmos validator voting onto Ethereum. The Gravity solidity contract has validator set updates costing ~500,000 gas ($2 @ 20gwei), tested on a snapshot of the Cosmos Hub validator set with 125 validators. Verifying the votes of the validator set is the most expensive on chain operation Gravity has to perform. Our highly optimized Solidity code provides enormous cost savings. Existing bridges incur more than double the gas costs for signature sets as small as 8 signers.
-- Transactions from Cosmos to ethereum are batched, batches have a base cost of ~500,000 gas ($2 @ 20gwei). Batches may contain arbitrary numbers of transactions within the limits of ERC20 sends per block, allowing for costs to be heavily amortized on high volume bridges.
+-Cosmosバリデーターの投票をEthereumにミラーリングする非常に効率的な方法。 Gravity Solidity契約には、125個のバリデーターを備えたCosmos Hubバリデーターセットのスナップショットでテストされた、最大500,000ガス($ 2 @ 20gwei)のバリデーターセットの更新があります。バリデーターセットの投票を検証することは、Gravityが実行しなければならないチェーン操作で最も費用がかかります。高度に最適化されたSolidityコードは、大幅なコスト削減を実現します。既存の橋は、8人の署名者という小さな署名セットのガスコストの2倍以上を負担します。
+-コスモスからイーサリアムへのトランザクションはバッチ処理され、バッチの基本コストは約500,000ガス($ 2 @ 20gwei)です。バッチには、ブロックあたりのERC20送信の制限内で任意の数のトランザクションを含めることができるため、大量のブリッジでコストを大幅に償却できます。
 
-## Operational parameters ensuring security
+## セキュリティを確保する運用パラメータ
 
-- There must be a validator set update made on the Ethereum contract by calling the `updateValset` method at least once every Cosmos unbonding period (usually 2 weeks). This is because if there has not been an update for longer than the unbonding period, the validator set stored by the Ethereum contract could contain validators who cannot be slashed for misbehavior.
-- Cosmos full nodes do not verify events coming from Ethereum. These events are accepted into the Cosmos state based purely on the signatures of the current validator set. It is possible for the validators with >2/3 of the stake to put events into the Cosmos state which never happened on Ethereum. In this case observers of both chains will need to "raise the alarm". We have built this functionality into the relayer.
+-少なくともCosmosの非結合期間(通常は2週間)ごとに1回、 `updateValset`メソッドを呼び出して、Ethereumコントラクトに対してバリデーターセットの更新を行う必要があります。これは、非結合期間より長く更新がない場合、イーサリアム契約によって保存されたバリデーターセットに、不正行為のためにスラッシュできないバリデーターが含まれている可能性があるためです。
+-Cosmosフルノードは、イーサリアムからのイベントを検証しません。これらのイベントは、純粋に現在のバリデーターセットの署名に基づいてCosmos状態に受け入れられます。ステークの2/3を超えるバリデーターは、イーサリアムでは発生しなかったイベントをコスモス状態にすることができます。この場合、両方のチェーンのオブザーバーは「アラームを発生させる」必要があります。この機能をリレーに組み込んでいます。
 
-## Run Gravity bridge right now using docker
+## Dockerを使用して今すぐGravityブリッジを実行します
 
-We provide a one button integration test that deploys a full arbitrary validator Cosmos chain and testnet Geth chain for both development + validation. We believe having a in depth test environment reflecting the full deployment and production-like use of the code is essential to productive development.
+開発と検証の両方のために、完全な任意のバリデーターCosmosチェーンとtestnetGethチェーンをデプロイするワンボタン統合テストを提供します。生産的な開発には、コードの完全な展開と本番環境での使用を反映した詳細なテスト環境が不可欠であると考えています。
 
-Currently on every commit we send hundreds of transactions, dozens of validator set updates, and several transaction batches in our test environment. This provides a high level of quality assurance for the Gravity bridge.
+現在、コミットごとに、テスト環境で数百のトランザクション、数十のバリデーターセットの更新、およびいくつかのトランザクションバッチを送信しています。これにより、Gravityブリッジに高レベルの品質保証が提供されます。
 
-Because the tests build absolutely everything in this repository they do take a significant amount of time to run. You may wish to simply push to a branch and have Github CI take care of the actual running of the tests.
+テストはこのリポジトリ内のすべてを完全に構築するため、実行にはかなりの時間がかかります。単にブランチにプッシュして、GithubCIにテストの実際の実行を処理させることをお勧めします。
 
-To run the test simply have docker installed and run.
+テストを実行するには、dockerをインストールして実行するだけです。
 
-`bash tests/all-up-test.sh`
+`bashテスト/all-up-test.sh`
 
-There are optional tests for specific features
+特定の機能のためのオプションのテストがあります
 
-Valset stress changes the validating power randomly 25 times, in an attempt to break validator set syncing
+バリデーターセットの同期を破ろうとして、Valsetストレスは検証力をランダムに25回変更します
 
 `bash tests/all-up-test.sh VALSET_STRESS`
 
-Batch stress sends 300 transactions over the bridge and then 3 batches back to Ethereum. This code can do up to 10k transactions but Github Actions does not have the horsepower.
+バッチストレスは、ブリッジを介して300トランザクションを送信し、次に3バッチをEthereumに送り返します。このコードは最大10,000のトランザクションを実行できますが、GithubActionsには馬力がありません。
 
 `bash tests/all-up-test.sh BATCH_STRESS`
 
-Validator out tests a validator that is not running the mandatory Ethereum node. This validator will be slashed and the bridge will remain functioning.
+Validator outは、必須のイーサリアムノードを実行していないバリデーターをテストします。このバリデーターはスラッシュされ、ブリッジは機能し続けます。
 
 `bash tests/all-up-test.sh VALIDATOR_OUT`
 
-# Developer guide
+# 開発者ガイド
 
-## Solidity Contract
+## 堅実な契約
 
-in the `solidity` folder
+`solidity`フォルダにあります
 
-Run `HUSKY_SKIP_INSTALL=1 npm install`, then `npm run typechain`.
+`HUSKY_SKIP_INSTALL = 1 npm install`を実行してから、` npm runtypechain`を実行します。
 
-Run `npm run evm` in a separate terminal and then
+別のターミナルで `npm run evm`を実行してから、
 
-Run `npm run test` to run tests.
+`npm run test`を実行して、テストを実行します。
 
-After modifying solidity files, run `npm run typechain` to recompile contract
-typedefs.
+Solidityファイルを変更した後、 `npm runtypechain`を実行してコントラクトを再コンパイルします
+typedefs。
 
-The Solidity contract is also covered in the Cosmos module tests, where it will be automatically deployed to the Geth test chain inside the development container for a micro testnet every integration test run.
+Solidityコントラクトは、Cosmosモジュールテストでもカバーされます。このテストでは、統合テストを実行するたびに、マイクロテストネットの開発コンテナー内のGethテストチェーンに自動的にデプロイされます。
 
-## Cosmos Module
+## コスモスモジュール
 
-We provide a standard container-based development environment that automatically bootstraps a Cosmos chain and Ethereum chain for testing. We believe standardization of the development environment and ease of development are essential so please file issues if you run into issues with the development flow.
+テスト用にCosmosチェーンとEthereumチェーンを自動的にブートストラップする標準のコンテナーベースの開発環境を提供します。開発環境の標準化と開発のしやすさが重要であると考えておりますので、開発フローに問題が生じた場合は、問題を提出してください。
 
-### Go unit tests
+### ユニットテストに行く
 
-These do not run the entire chain but instead test parts of the Go module code in isolation. To run them, go into `/module` and run `make test`
+これらはチェーン全体を実行するのではなく、Goモジュールコードの一部を個別にテストします。それらを実行するには、 `/module`に移動し、` maketest`を実行します
 
-### To hand test your changes quickly
+### 変更をすばやく手動でテストするには
 
-This method is dictinct from the all up test described above. Although it runs the same components it's much faster when editing individual components.
+この方法は、上記のすべてのテストから決定されます。同じコンポーネントを実行しますが、個々のコンポーネントを編集する場合ははるかに高速です。
 
-1. run `./tests/build-container.sh`
-2. run `./tests/start-chains.sh`
-3. switch to a new terminal and run `./tests/run-tests.sh`
-4. Or, `docker exec -it gravity_test_instance /bin/bash` should allow you to access a shell inside the test container
+1.`。/tests/build-container.sh`を実行します
+2.`。/tests/start-chains.sh`を実行します
+3.新しいターミナルに切り替えて、 `。/tests/run-tests.sh`を実行します
+4.または、 `docker exec -itgravity_test_instance/bin/bash`を使用すると、テストコンテナ内のシェルにアクセスできるようになります。
 
-Change the code, and when you want to test it again, restart `./tests/start-chains.sh` and run `./tests/run-tests.sh`.
+コードを変更し、再度テストする場合は、 `。/tests/start-chains.sh`を再起動して、`。/tests/run-tests.sh`を実行します。
 
-### Explanation:
+### 説明:
 
-`./tests/build-container.sh` builds the base container and builds the Gravity test zone for the first time. This results in a Docker container which contains cached Go dependencies (the base container).
+`。/tests/build-container.sh`は、ベースコンテナを構築し、Gravityテストゾーンを初めて構築します。これにより、キャッシュされたGo依存関係を含むDockerコンテナー(ベースコンテナー)が作成されます。
 
-`./tests/start-chains.sh` starts a test container based on the base container and copies the current source code (including any changes you have made) into it. It then builds the Gravity test zone, benefiting from the cached Go dependencies. It then starts the Cosmos chain running on your new code. It also starts an Ethereum node. These nodes stay running in the terminal you started it in, and it can be useful to look at the logs. Be aware that this also mounts the Gravity repo folder into the container, meaning changes you make will be reflected there.
+`。/tests/start-chains.sh`は、ベースコンテナに基づいてテストコンテナを起動し、現在のソースコード(行った変更を含む)をそのコンテナにコピーします。次に、キャッシュされたGoの依存関係を利用して、重力テストゾーンを構築します。次に、新しいコードで実行されているCosmosチェーンを開始します。また、Ethereumノードを起動します。これらのノードは、起動したターミナルで実行されたままであり、ログを確認すると便利です。これにより、Gravityリポジトリフォルダーもコンテナーにマウントされることに注意してください。つまり、行った変更はそこに反映されます。
 
-`./tests/run-tests.sh` connects to the running test container and runs the integration test found in `./tests/integration-tests.sh`
+`。/tests/run-tests.sh`は実行中のテストコンテナに接続し、`。/tests/integration-tests.sh`にある統合テストを実行します
 
-### Tips for IDEs:
+### IDEのヒント:
 
-- Launch VS Code in /solidity with the solidity extension enabled to get inline typechecking of the solidity contract
-- Launch VS Code in /module/app with the go extension enabled to get inline typechecking of the dummy cosmos chain
+-Solidity拡張機能を有効にして/solidityでVSCodeを起動し、Solidityコントラクトのインラインタイプチェックを取得します
+-go拡張機能を有効にして/module/appでVSCodeを起動し、ダミーのコスモスチェーンのインラインタイプチェックを取得します
 
-### Working inside the container
+###コンテナ内での作業
 
-It can be useful to modify, recompile, and restart the testnet without restarting the container, for example if you are running a text editor in the container and would not like it to exit, or if you are editing dependencies stored in the container's `/go/` folder.
+コンテナでテキストエディタを実行していて終了したくない場合や、コンテナの `/に保存されている依存関係を編集している場合など、コンテナを再起動せずにテストネットを変更、再コンパイル、再起動すると便利です。 go/`フォルダ。
 
-In this workflow, you can use `./tests/reload-code.sh` to recompile and restart the testnet without restarting the container.
+このワークフローでは、 `。/tests/reload-code.sh`を使用して、コンテナを再起動せずにテストネットを再コンパイルして再起動できます。
 
-For example, you can use VS Code's "Remote-Container" extension to attach to the running container started with `./tests/start-chains.sh`, then edit the code inside the container, restart the testnet with `./tests/reload-code.sh`, and run the tests with `./tests/integration-tests.sh`.
+たとえば、VS Codeの「Remote-Container」拡張機能を使用して、 `。/tests/start-chains.sh`で始まる実行中のコンテナーに接続し、コンテナー内のコードを編集して、` ./testsでテストネットを再起動できます。/reload-code.sh`を実行し、 `。/tests/integration-tests.sh`を使用してテストを実行します。
 
-## Debugger
+## デバッガー
 
-To use a stepping debugger in VS Code, follow the "Working inside the container" instructions above, but set up a one node testnet using `./tests/reload-code.sh 1`. Now kill the node with `pkill gravityd`. Start the debugger from within VS Code, and you will have a 1 node debuggable testnet.
+VS Codeでステッピングデバッガーを使用するには、上記の「コンテナー内での作業」の手順に従いますが、 `。/tests/reload-code.sh1`を使用して1ノードのテストネットをセットアップします。ここで、 `pkillgravityed`でノードを強制終了します。 VS Code内からデバッガーを起動すると、1ノードのデバッグ可能なテストネットが作成されます。
